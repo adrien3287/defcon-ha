@@ -1,11 +1,11 @@
 {
   "domain": "defcon_ha",
   "name": "DEFCON Home",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "config_flow": true,
   "single_config_entry": true,
   "integration_type": "service",
-  "iot_class": "calculated",
+  "iot_class": "cloud_polling",
   "documentation": "https://github.com/adrien3287/defcon-ha",
   "issue_tracker": "https://github.com/adrien3287/defcon-ha/issues",
   "codeowners": ["@adrien3287"],
