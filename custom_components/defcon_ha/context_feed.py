@@ -39,6 +39,8 @@ class ContextFeed:
     valid_until: datetime | None
     status: str
     error: str = ""
+    report_markdown: str = ""
+    report_markdown: str = ""
 
     @property
     def is_fresh(self) -> bool:
@@ -86,6 +88,7 @@ async def async_fetch_context_feed(
             generated_at=None,
             valid_until=None,
             status="disabled",
+            report_markdown="",
         )
 
     owner = str(settings.get(CONF_GITHUB_OWNER, DEFAULT_GITHUB_OWNER)).strip()
@@ -103,6 +106,7 @@ async def async_fetch_context_feed(
             valid_until=None,
             status="error",
             error="missing_repository_configuration",
+            report_markdown="",
         )
 
     url = (
@@ -138,6 +142,7 @@ async def async_fetch_context_feed(
             valid_until=None,
             status="error",
             error=str(err),
+            report_markdown="",
         )
 
     try:
@@ -152,6 +157,7 @@ async def async_fetch_context_feed(
             valid_until=None,
             status="error",
             error="invalid_json",
+            report_markdown="",
         )
 
     if not isinstance(payload, dict):
@@ -164,6 +170,7 @@ async def async_fetch_context_feed(
             valid_until=None,
             status="error",
             error="invalid_root",
+            report_markdown="",
         )
 
     level = _safe_level(payload.get("context_defcon", payload.get("defcon")))
@@ -172,6 +179,8 @@ async def async_fetch_context_feed(
     summary = str(payload.get("summary", "")).strip()
     reasons = _normalize_list(payload.get("reasons"))
     weak_signals = _normalize_list(payload.get("weak_signals"))
+    report_markdown = str(payload.get("report_markdown", "")).strip()
+    report_markdown = str(payload.get("report_markdown", "")).strip()
 
     if level is None or valid_until is None:
         return ContextFeed(
@@ -183,6 +192,7 @@ async def async_fetch_context_feed(
             valid_until=valid_until,
             status="error",
             error="missing_or_invalid_level_or_valid_until",
+            report_markdown=report_markdown,
         )
 
     status = "fresh" if valid_until > dt_util.utcnow() else "stale"
@@ -195,4 +205,5 @@ async def async_fetch_context_feed(
         valid_until=valid_until,
         status=status,
         error="" if status == "fresh" else "feed_expired",
+        report_markdown=report_markdown,
     )

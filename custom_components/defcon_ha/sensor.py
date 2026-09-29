@@ -121,4 +121,5 @@ class DefconContextSensor(_DefconBaseSensor):
             "generated_at": data.context_generated_at.isoformat() if data.context_generated_at else None,
             "valid_until": data.context_valid_until.isoformat() if data.context_valid_until else None,
             "error": data.context_error,
+            "report": data.context_report,
         }

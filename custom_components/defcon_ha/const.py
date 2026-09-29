@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"
