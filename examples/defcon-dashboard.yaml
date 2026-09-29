@@ -33,21 +33,13 @@ views:
             vertical: false
             features_position: bottom
 
-          - type: tile
-            entity: select.defcon_home_manual_override
-            name: Override manuel
-            icon: mdi:shield-edit
-            vertical: false
-            features:
-              - type: select-options
-
-          - type: tile
-            entity: button.defcon_home_refresh
-            name: Rafraîchir
-            icon: mdi:refresh
-            vertical: false
-            tap_action:
-              action: toggle
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: select.defcon_home_manual_override
+                name: Override manuel
+              - entity: button.defcon_home_refresh
+                name: Rafraîchir maintenant
 
       - type: grid
         cards:
