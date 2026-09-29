@@ -20,7 +20,8 @@
       }
     },
     "abort": {
-      "single_instance_allowed": "Only one DEFCON Home instance can be configured."
+      "single_instance_allowed": "Only one DEFCON Home instance can be configured.",
+      "already_configured": "DEFCON Home is already configured."
     }
   }
 }
