@@ -1,0 +1,67 @@
+title: DEFCON Maison
+views:
+  - title: Situation
+    path: defcon
+    icon: mdi:shield-alert
+    cards:
+      - type: custom:defcon-ha-card
+        entity: sensor.defcon_home_level
+        title: DEFCON Maison
+        show_sources: true
+
+      - type: entities
+        title: Niveaux
+        entities:
+          - entity: sensor.defcon_home_level
+            name: DEFCON final
+          - entity: sensor.defcon_home_local_level
+            name: DEFCON local
+          - entity: sensor.defcon_home_context_level
+            name: DEFCON contexte
+          - entity: select.defcon_home_manual_override
+            name: Override manuel
+          - entity: button.defcon_home_refresh
+            name: Rafraîchir maintenant
+
+      - type: markdown
+        title: Rapport contextuel
+        content: >-
+          {% set report = state_attr('sensor.defcon_home_level', 'context_report') %}
+          {% if report %}
+          {{ report }}
+          {% else %}
+          Aucun rapport contextuel disponible pour le moment.
+          {% endif %}
+
+      - type: markdown
+        title: Résumé
+        content: >-
+          **Local:** DEFCON {{ state_attr('sensor.defcon_home_level', 'local_level') }}
+
+          **Contexte:** DEFCON {{ state_attr('sensor.defcon_home_level', 'context_level') }}
+
+          **Statut contexte:** {{ state_attr('sensor.defcon_home_level', 'context_status') }}
+
+          **Résumé:** {{ state_attr('sensor.defcon_home_level', 'context_summary') }}
+
+      - type: entities
+        title: État du feed
+        entities:
+          - entity: sensor.defcon_home_context_level
+            name: Feed contextuel
+          - type: attribute
+            entity: sensor.defcon_home_context_level
+            attribute: status
+            name: Statut
+          - type: attribute
+            entity: sensor.defcon_home_context_level
+            attribute: generated_at
+            name: Généré
+          - type: attribute
+            entity: sensor.defcon_home_context_level
+            attribute: valid_until
+            name: Valide jusqu'à
+          - type: attribute
+            entity: sensor.defcon_home_context_level
+            attribute: error
+            name: Erreur
