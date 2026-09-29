@@ -1,78 +1,147 @@
 # DEFCON Home for Home Assistant
 
-A local Home Assistant integration that converts existing warning and transport entities into a single household situation level (`DEFCON 5` to `DEFCON 1`) and explains **why** the level is active.
+DEFCON Home combines **immediate local Home Assistant alerts** with a **private contextual situation feed** to produce one household DEFCON level from 5 (normal) to 1 (immediate danger).
 
-The integration does **not** call DWD or HVV itself. It consumes entities that already exist in Home Assistant. For NINA it can additionally call the official `nina.get_details` Home Assistant action to enrich an active warning with its headline, description and severity.
-
-## What v0.1.0 includes
-
-- One calculated sensor for the current household DEFCON level.
-- Separate `automatic_level` so manual decisions never hide what the engine calculated.
-- Persistent manual override: `Auto`, `DEFCON 5`, `4`, `3`, `2`, `1`.
-- Current reasons stored as structured sensor attributes: source, entity, headline, detail, severity and proposed level.
-- Event `defcon_ha_level_changed` whenever the effective level changes.
-- Bundled Lovelace card `custom:defcon-ha-card`, loaded automatically by the integration.
-- UI configuration flow for NINA, DWD, HVV and optional generic Home Assistant entities.
-- No external Python dependency and no additional cloud API.
-
-## Default decision policy
-
-The first version deliberately uses simple, auditable rules. They can later be made editable from the UI.
-
-| Source | Condition | Automatic level |
-| --- | --- | ---: |
-| NINA | active selected official warning | DEFCON 3 |
-| NINA | severity `Extreme`, or `Severe` + urgency `Immediate` | DEFCON 2 |
-| NINA | severity `Minor` | DEFCON 4 |
-| DWD current | level 1-2 | DEFCON 4 |
-| DWD current | level 3 | DEFCON 3 |
-| DWD current | level 4+ | DEFCON 2 |
-| DWD advance | level 1-3 | DEFCON 4 |
-| DWD advance | level 4+ | DEFCON 3 |
-| HVV | selected entity contains a disruption/cancellation/closure/delay signal | DEFCON 4 |
-| Other | selected alarm/status entity is active or contains warning/problem keywords | DEFCON 4 |
-| None | no active reason | DEFCON 5 |
-
-The most severe active reason wins. A manual override changes the effective level but leaves `automatic_level` untouched.
-
-## Installation
-
-### HACS custom repository
-
-1. In HACS, add `https://github.com/adrien3287/defcon-ha` as a custom **Integration** repository.
-2. Install **DEFCON Home**.
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration → DEFCON Home**.
-5. Select the existing entities you want the engine to monitor.
-
-### Manual
-
-Copy `custom_components/defcon_ha` into your Home Assistant `config/custom_components/` directory and restart Home Assistant.
-
-## Recommended source configuration
-
-### NINA
-
-Select the NINA warning slots for the area relevant to the house. The built-in NINA integration creates warning slots and exposes details through `nina.get_details` when a warning is active.
-
-### DWD
-
-Select the DWD weather-warning level sensors, typically the current and optionally advance warning sensors, for example:
+## Architecture
 
 ```text
-sensor.dwd_weather_warnings_current_warning_level
-sensor.dwd_weather_warnings_advance_warning_level
+Immediate / local                         Context / hourly analysis
+Home Assistant                           private GitHub repo
+                                              adrien3287/defcon-json
+NINA warning slots ─┐                         status/current.json
+DWD warning levels ─┤                               │
+HVV status ─────────┼─> Local DEFCON                  │ HTTPS + read-only token
+Other HA alarms ────┘       │                         ▼
+                            └──────────────┐   Context DEFCON
+                                           ▼         │
+                                      Aggregator <───┘
+                                           │
+                                  final = most severe
+                                           │
+                                  Manual override
+                                           │
+                                  DEFCON Home card
 ```
 
-The engine reads the `warning_N_level`, `warning_N_headline`, `warning_N_description` and related attributes when available.
+The contextual feed can **escalate** the result but can never hide a more severe local NINA/DWD/HVV/HA alert.
 
-### HVV
+If the context feed is stale, unavailable or invalid, it is automatically excluded from the automatic level. Local monitoring continues normally.
 
-Select only entities that matter for household mobility, such as status/disruption entities for the relevant S-Bahn/bus routes. DEFCON Home intentionally does not treat every HVV entity as a risk source.
+## v0.2.0
 
-## Dashboard card
+- Immediate local evaluation of NINA, DWD, HVV and optional HA entities.
+- Private GitHub JSON feed polled every 5 minutes.
+- Feed freshness enforced with `valid_until`.
+- Three sensors:
+  - `Level` — final effective DEFCON.
+  - `Local level` — only immediate HA sources.
+  - `Context level` — hourly contextual analysis.
+- Persistent manual override.
+- Refresh button.
+- Lovelace card showing Local / Context / Automatic / Final.
+- Options UI to change source entities and GitHub credentials without recreating the integration.
+- GitHub token is never exposed in entity attributes.
 
-The integration serves and injects the card automatically. Add a manual card to a dashboard:
+## Default Hamburg entities
+
+New installations prefill:
+
+```text
+sensor.hamburg_harburg_niveau_d_alerte_actuel
+sensor.hamburg_harburg_niveau_d_alerte_anticipee
+
+binary_sensor.hamburg_freie_und_hansestadt_warning_1
+binary_sensor.hamburg_freie_und_hansestadt_warning_2
+binary_sensor.hamburg_freie_und_hansestadt_warning_3
+binary_sensor.hamburg_freie_und_hansestadt_warning_4
+binary_sensor.hamburg_freie_und_hansestadt_warning_5
+```
+
+Existing installations can set these under **Settings → Devices & services → DEFCON Home → Configure**.
+
+## Private context feed
+
+Default repository configuration:
+
+```text
+owner: adrien3287
+repository: defcon-json
+path: status/current.json
+```
+
+Because the repository is private, create a dedicated GitHub fine-grained personal access token with:
+
+- Repository access: only `defcon-json`
+- Repository permission: **Contents: Read**
+- No write/admin permission
+
+Enter the token in the DEFCON Home options screen. It is sent as an HTTP `Authorization: Bearer` header, never in the URL.
+
+### Expected JSON
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-29T22:23:00+02:00",
+  "valid_until": "2026-09-29T23:53:00+02:00",
+  "context_defcon": 4,
+  "confidence": "medium",
+  "summary": "Short situation summary",
+  "areas": {
+    "marmstorf_harburg": {"level": 5, "summary": "..."},
+    "hamburg": {"level": 4, "summary": "..."},
+    "germany": {"level": 4, "summary": "..."},
+    "europe": {"level": 4, "summary": "..."}
+  },
+  "reasons": [],
+  "weak_signals": [],
+  "checks": {},
+  "source_count": 8
+}
+```
+
+Only a feed with a valid DEFCON level and a future `valid_until` influences the automatic result.
+
+## Decision rule
+
+```text
+automatic DEFCON = min(local DEFCON, fresh context DEFCON)
+final DEFCON     = manual override if enabled, otherwise automatic DEFCON
+```
+
+Example:
+
+```text
+Local   = 5
+Context = 4
+Final   = 4
+
+Local   = 3
+Context = 5
+Final   = 3
+
+Local   = 3
+Context = stale
+Final   = 3
+```
+
+## Local default policy
+
+| Source | Condition | Level |
+| --- | --- | ---: |
+| none | no active local reason | 5 |
+| NINA Minor | selected official warning | 4 |
+| NINA active | normal active official warning | 3 |
+| NINA Extreme / Severe+Immediate | high-severity official warning | 2 |
+| DWD current level 1-2 | weather watch | 4 |
+| DWD current level 3 | serious weather | 3 |
+| DWD current level 4+ | very severe weather | 2 |
+| DWD advance level 1-3 | advance weather watch | 4 |
+| DWD advance level 4+ | severe advance warning | 3 |
+| HVV selected disruption | disruption/cancellation/closure/15+ min delay | 4 |
+| Other selected HA problem | active alarm/problem | 4 |
+
+## Card
 
 ```yaml
 type: custom:defcon-ha-card
@@ -81,21 +150,9 @@ title: DEFCON Maison
 show_sources: true
 ```
 
-The actual entity ID can differ depending on the Home Assistant entity registry. Pick the `Level` sensor created under the **DEFCON Home** device.
+The card is served and loaded automatically by the integration.
 
-The card shows:
-
-- effective DEFCON level;
-- automatic level;
-- manual override, when active;
-- short summary;
-- every active reason with its source and proposed level;
-- configured source entity IDs;
-- last evaluation time.
-
-Click the colored header to open the normal Home Assistant more-info dialog.
-
-## Automations
+## Events
 
 Every effective level change fires:
 
@@ -103,46 +160,26 @@ Every effective level change fires:
 defcon_ha_level_changed
 ```
 
-Event data example:
+with:
 
 ```yaml
 old_level: 5
-new_level: 3
-automatic_level: 3
-summary: "Official warning ..."
-reasons:
-  - source: NINA
-    entity_id: binary_sensor.example_warning_1
-    title: Official warning
-    detail: ...
-    level: 3
-    severity: Moderate
+new_level: 4
+automatic_level: 4
+local_level: 5
+context_level: 4
+context_status: fresh
+summary: ...
+reasons: [...]
 ```
 
-This event is intended for household reactions such as notifications, ventilation shutdown, emergency lighting or a dedicated DEFCON dashboard. Safety-critical actions should still include their own checks rather than relying on one aggregate level alone.
+## Privacy and resilience
 
-## Architecture
-
-```text
-Existing HA integrations/entities
-  ├─ NINA warning slots ───┐
-  ├─ DWD warning levels ───┤
-  ├─ HVV status ───────────┼─> DEFCON coordinator ─> sensor (level + reasons)
-  └─ other alarm sensors ──┘                     ├─> manual override select
-                                                  ├─> level_changed event
-                                                  └─> Lovelace card
-```
-
-The coordinator is event-driven: changes to selected Home Assistant entities trigger a reevaluation. Recorder/history can therefore track the calculated level like any other sensor.
-
-## Next useful increments
-
-- UI-editable rules and thresholds instead of hard-coded defaults.
-- Dedicated source adapters for the exact HVV entity schema used in the target installation.
-- Additional household signals: power/grid, water, Internet, BSI/security, smoke/CO, battery autonomy and local infrastructure.
-- Reason acknowledgement/snooze without suppressing the underlying warning.
-- Timeline/history view and per-source freshness/health checks.
-- Optional escalation hysteresis to prevent brief source glitches from changing level.
+- The contextual repository is private.
+- The feed contains no exact home address, Home Assistant entity IDs, tokens or secrets.
+- The Home Assistant GitHub token is read-only and limited to one repository.
+- A GitHub/Internet/ChatGPT outage cannot suppress an immediate local warning.
+- An expired contextual report is never interpreted as proof that the situation is normal.
 
 ## License
 

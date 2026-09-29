@@ -17,21 +17,24 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up DEFCON Home sensor."""
+    """Set up DEFCON Home sensors."""
     coordinator: DefconCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([DefconLevelSensor(coordinator, entry)])
+    async_add_entities(
+        [
+            DefconLevelSensor(coordinator, entry),
+            DefconLocalSensor(coordinator, entry),
+            DefconContextSensor(coordinator, entry),
+        ]
+    )
 
 
-class DefconLevelSensor(CoordinatorEntity[DefconCoordinator], SensorEntity):
-    """Current household DEFCON level."""
-
+class _DefconBaseSensor(CoordinatorEntity[DefconCoordinator], SensorEntity):
     _attr_has_entity_name = True
-    _attr_name = "Level"
     _attr_icon = "mdi:shield-alert"
 
     def __init__(self, coordinator: DefconCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_level"
+        self._entry = entry
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": "DEFCON Home",
@@ -39,14 +42,83 @@ class DefconLevelSensor(CoordinatorEntity[DefconCoordinator], SensorEntity):
             "model": "Household situation engine",
         }
 
+
+class DefconLevelSensor(_DefconBaseSensor):
+    """Effective household DEFCON level."""
+
+    _attr_name = "Level"
+
+    def __init__(self, coordinator: DefconCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_level"
+
     @property
     def native_value(self) -> int:
-        """Return current DEFCON level."""
         return self.coordinator.data.level
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Return current explanation and source details."""
         attrs = self.coordinator.data.as_attributes()
         attrs["source_entities"] = self.coordinator.source_entities
         return attrs
+
+
+class DefconLocalSensor(_DefconBaseSensor):
+    """Immediate local DEFCON level from Home Assistant entities."""
+
+    _attr_name = "Local level"
+    _attr_icon = "mdi:home-alert"
+
+    def __init__(self, coordinator: DefconCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_local_level"
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.data.local_level
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            "reasons": [
+                {
+                    "source": reason.source,
+                    "entity_id": reason.entity_id,
+                    "title": reason.title,
+                    "detail": reason.detail,
+                    "level": reason.level,
+                    "severity": reason.severity,
+                }
+                for reason in self.coordinator.data.local_reasons
+            ],
+            "source_entities": self.coordinator.source_entities,
+        }
+
+
+class DefconContextSensor(_DefconBaseSensor):
+    """Contextual DEFCON level from the private GitHub feed."""
+
+    _attr_name = "Context level"
+    _attr_icon = "mdi:newspaper-variant-multiple"
+
+    def __init__(self, coordinator: DefconCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_context_level"
+
+    @property
+    def native_value(self) -> int | None:
+        return self.coordinator.data.context_level
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        data = self.coordinator.data
+        return {
+            "status": data.context_status,
+            "in_use": data.context_in_use,
+            "summary": data.context_summary,
+            "reasons": data.context_reasons,
+            "weak_signals": data.weak_signals,
+            "generated_at": data.context_generated_at.isoformat() if data.context_generated_at else None,
+            "valid_until": data.context_valid_until.isoformat() if data.context_valid_until else None,
+            "error": data.context_error,
+        }

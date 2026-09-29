@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import re
 from typing import Any
@@ -22,58 +22,35 @@ from .const import (
     CONF_MANUAL_OVERRIDE,
     CONF_NINA_ENTITIES,
     CONF_OTHER_ENTITIES,
+    CONTEXT_POLL_MINUTES,
     DEFAULT_OVERRIDE,
     DOMAIN,
     EVENT_LEVEL_CHANGED,
     LEVEL_COLORS,
     LEVEL_NAMES,
 )
+from .context_feed import ContextFeed, async_fetch_context_feed
 
 _LOGGER = logging.getLogger(__name__)
 
 _HVV_PROBLEM = (
-    "störung",
-    "stoerung",
-    "ausfall",
-    "entfällt",
-    "entfaellt",
-    "gesperrt",
-    "sperrung",
-    "unterbrochen",
-    "ersatzverkehr",
-    "verspät",
-    "disruption",
-    "cancelled",
-    "canceled",
-    "suspended",
-    "closed",
-    "delay",
+    "störung", "stoerung", "ausfall", "entfällt", "entfaellt", "gesperrt",
+    "sperrung", "unterbrochen", "ersatzverkehr", "verspät", "disruption",
+    "cancelled", "canceled", "suspended", "closed", "delay",
 )
 _HVV_SEVERE = (
-    "kein verkehr",
-    "verkehr eingestellt",
-    "komplett gesperrt",
-    "vollsperrung",
-    "service suspended",
-    "no service",
+    "kein verkehr", "verkehr eingestellt", "komplett gesperrt", "vollsperrung",
+    "service suspended", "no service",
 )
 _GENERIC_PROBLEM = (
-    "alert",
-    "alarm",
-    "warning",
-    "unsafe",
-    "problem",
-    "fault",
-    "critical",
-    "störung",
-    "stoerung",
-    "warnung",
+    "alert", "alarm", "warning", "unsafe", "problem", "fault", "critical",
+    "störung", "stoerung", "warnung",
 )
 
 
 @dataclass(slots=True)
 class DefconReason:
-    """One active reason contributing to the current level."""
+    """One active local reason contributing to the current level."""
 
     source: str
     entity_id: str
@@ -89,120 +66,177 @@ class DefconSnapshot:
 
     level: int
     automatic_level: int
+    local_level: int
+    context_level: int | None
+    context_status: str
+    context_summary: str
+    context_reasons: list[dict[str, Any]]
+    weak_signals: list[dict[str, Any]]
+    context_generated_at: datetime | None
+    context_valid_until: datetime | None
+    context_error: str
     level_name: str
     color: str
     summary: str
-    reasons: list[DefconReason]
+    local_reasons: list[DefconReason]
     evaluated_at: datetime
     manual_override: str
 
+    @property
+    def context_in_use(self) -> bool:
+        return self.context_status == "fresh" and self.context_level is not None
+
+    def combined_reasons(self) -> list[dict[str, Any]]:
+        reasons = [asdict(reason) for reason in self.local_reasons]
+        for reason in self.context_reasons:
+            title = str(reason.get("title", "Context signal"))
+            scope = str(reason.get("scope", ""))
+            category = str(reason.get("category", ""))
+            detail = " · ".join(part for part in (scope, category) if part)
+            source_name = str(reason.get("source_name", "Context"))
+            try:
+                level = int(reason.get("level", self.context_level or 5))
+            except (TypeError, ValueError):
+                level = self.context_level or 5
+            reasons.append(
+                {
+                    "source": f"Context · {source_name}",
+                    "entity_id": "",
+                    "title": title,
+                    "detail": detail,
+                    "level": level,
+                    "severity": str(reason.get("status", "context")),
+                    "scope": scope,
+                    "category": category,
+                    "source_url": str(reason.get("source_url", "")),
+                }
+            )
+        reasons.sort(key=lambda item: (int(item.get("level", 5)), str(item.get("source", ""))))
+        return reasons
+
     def as_attributes(self) -> dict[str, Any]:
-        """Return entity-safe attributes."""
+        combined = self.combined_reasons()
         return {
             "automatic_level": self.automatic_level,
+            "local_level": self.local_level,
+            "context_level": self.context_level,
+            "context_status": self.context_status,
+            "context_in_use": self.context_in_use,
+            "context_summary": self.context_summary,
+            "context_reasons": self.context_reasons,
+            "weak_signals": self.weak_signals,
+            "context_generated_at": self.context_generated_at.isoformat() if self.context_generated_at else None,
+            "context_valid_until": self.context_valid_until.isoformat() if self.context_valid_until else None,
+            "context_error": self.context_error,
             "level_name": self.level_name,
             "color": self.color,
             "summary": self.summary,
             "manual_override": self.manual_override,
-            "reasons": [asdict(reason) for reason in self.reasons],
-            "active_reason_count": len(self.reasons),
+            "reasons": combined,
+            "local_reasons": [asdict(reason) for reason in self.local_reasons],
+            "active_reason_count": len(combined),
             "evaluated_at": self.evaluated_at.isoformat(),
         }
 
 
 class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
-    """Aggregate existing Home Assistant entities into one household DEFCON level."""
+    """Aggregate local HA signals and the private contextual feed."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the coordinator."""
         super().__init__(
             hass,
             _LOGGER,
             config_entry=entry,
             name=DOMAIN,
-            update_interval=None,
+            update_interval=timedelta(minutes=CONTEXT_POLL_MINUTES),
         )
         self.entry = entry
         self._remove_listener = None
         self._last_level: int | None = None
 
     @property
+    def settings(self) -> dict[str, Any]:
+        return {**self.entry.data, **self.entry.options}
+
+    @property
     def source_entities(self) -> list[str]:
-        """Return all configured source entities."""
         entity_ids: list[str] = []
+        settings = self.settings
         for key in (
             CONF_NINA_ENTITIES,
             CONF_DWD_ENTITIES,
             CONF_HVV_ENTITIES,
             CONF_OTHER_ENTITIES,
         ):
-            entity_ids.extend(self.entry.data.get(key, []))
+            entity_ids.extend(settings.get(key, []))
         return list(dict.fromkeys(entity_ids))
 
     @callback
     def async_start(self) -> None:
-        """Listen for changes on all configured source entities."""
-        if self._remove_listener or not self.source_entities:
-            return
-        self._remove_listener = async_track_state_change_event(
-            self.hass, self.source_entities, self._async_source_changed
-        )
+        if self._remove_listener:
+            self._remove_listener()
+            self._remove_listener = None
+        if self.source_entities:
+            self._remove_listener = async_track_state_change_event(
+                self.hass, self.source_entities, self._async_source_changed
+            )
 
     @callback
     def async_stop(self) -> None:
-        """Stop listening for source changes."""
         if self._remove_listener:
             self._remove_listener()
             self._remove_listener = None
 
     @callback
     def _async_source_changed(self, _event: Any) -> None:
-        """Refresh when a monitored entity changes state or attributes."""
         self.entry.async_create_task(
             self.hass, self.async_request_refresh(), "DEFCON Home source refresh"
         )
 
     async def async_set_override(self, option: str) -> None:
-        """Persist and apply the manual override."""
         options = dict(self.entry.options)
         options[CONF_MANUAL_OVERRIDE] = option
         self.hass.config_entries.async_update_entry(self.entry, options=options)
         await self.async_request_refresh()
 
     async def _async_update_data(self) -> DefconSnapshot:
-        """Evaluate all source entities."""
-        reasons: list[DefconReason] = []
+        settings = self.settings
+        local_reasons: list[DefconReason] = []
 
-        for entity_id in self.entry.data.get(CONF_NINA_ENTITIES, []):
+        for entity_id in settings.get(CONF_NINA_ENTITIES, []):
             state = self.hass.states.get(entity_id)
             if state:
                 reason = await self._async_analyse_nina(state)
                 if reason:
-                    reasons.append(reason)
+                    local_reasons.append(reason)
 
-        for entity_id in self.entry.data.get(CONF_DWD_ENTITIES, []):
+        for entity_id in settings.get(CONF_DWD_ENTITIES, []):
             state = self.hass.states.get(entity_id)
             if state:
-                reasons.extend(self._analyse_dwd(state))
+                local_reasons.extend(self._analyse_dwd(state))
 
-        for entity_id in self.entry.data.get(CONF_HVV_ENTITIES, []):
+        for entity_id in settings.get(CONF_HVV_ENTITIES, []):
             state = self.hass.states.get(entity_id)
             if state:
                 reason = self._analyse_hvv(state)
                 if reason:
-                    reasons.append(reason)
+                    local_reasons.append(reason)
 
-        for entity_id in self.entry.data.get(CONF_OTHER_ENTITIES, []):
+        for entity_id in settings.get(CONF_OTHER_ENTITIES, []):
             state = self.hass.states.get(entity_id)
             if state:
                 reason = self._analyse_generic(state)
                 if reason:
-                    reasons.append(reason)
+                    local_reasons.append(reason)
 
-        reasons.sort(key=lambda reason: (reason.level, reason.source, reason.title))
-        automatic_level = min((reason.level for reason in reasons), default=5)
+        local_reasons.sort(key=lambda reason: (reason.level, reason.source, reason.title))
+        local_level = min((reason.level for reason in local_reasons), default=5)
 
-        override = self.entry.options.get(CONF_MANUAL_OVERRIDE, DEFAULT_OVERRIDE)
+        context: ContextFeed = await async_fetch_context_feed(self.hass, settings)
+        context_effective_level = context.level if context.is_fresh and context.level is not None else 5
+        automatic_level = min(local_level, context_effective_level)
+
+        override = settings.get(CONF_MANUAL_OVERRIDE, DEFAULT_OVERRIDE)
         level = automatic_level
         if isinstance(override, str) and override.startswith("defcon_"):
             try:
@@ -210,14 +244,25 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             except ValueError:
                 level = automatic_level
 
-        summary = self._build_summary(reasons, automatic_level, level, override)
+        summary = self._build_summary(
+            local_reasons, local_level, context, automatic_level, level, override
+        )
         snapshot = DefconSnapshot(
             level=level,
             automatic_level=automatic_level,
+            local_level=local_level,
+            context_level=context.level,
+            context_status=context.status,
+            context_summary=context.summary,
+            context_reasons=context.reasons,
+            weak_signals=context.weak_signals,
+            context_generated_at=context.generated_at,
+            context_valid_until=context.valid_until,
+            context_error=context.error,
             level_name=LEVEL_NAMES[level],
             color=LEVEL_COLORS[level],
             summary=summary,
-            reasons=reasons,
+            local_reasons=local_reasons,
             evaluated_at=dt_util.utcnow(),
             manual_override=override,
         )
@@ -229,15 +274,17 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
                     "old_level": self._last_level,
                     "new_level": level,
                     "automatic_level": automatic_level,
+                    "local_level": local_level,
+                    "context_level": context.level,
+                    "context_status": context.status,
                     "summary": summary,
-                    "reasons": [asdict(reason) for reason in reasons],
+                    "reasons": snapshot.combined_reasons(),
                 },
             )
         self._last_level = level
         return snapshot
 
     async def _async_analyse_nina(self, state: State) -> DefconReason | None:
-        """Analyse an official NINA warning entity."""
         if state.state in ("off", "0", STATE_UNKNOWN, STATE_UNAVAILABLE):
             return None
 
@@ -269,8 +316,6 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         if "cancel" in status or "entwarn" in headline.lower():
             return None
 
-        # Household policy: every active official civil-protection warning selected
-        # by the user raises at least DEFCON 3. Extreme/immediate warnings raise 2.
         level = 3
         if severity.lower() == "extreme" or (
             severity.lower() == "severe" and urgency.lower() == "immediate"
@@ -289,7 +334,6 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         )
 
     def _analyse_dwd(self, state: State) -> list[DefconReason]:
-        """Analyse DWD current/advance warning level sensors."""
         if state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             return []
 
@@ -318,17 +362,20 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             reason = self._dwd_reason(state, sensor_level, None)
             if reason:
                 reasons.append(reason)
-
         return reasons
 
     def _dwd_reason(
         self, state: State, warning_level: int, index: int | None
     ) -> DefconReason | None:
-        """Build one DWD warning reason."""
         if warning_level <= 0:
             return None
 
-        is_advance = "advance" in state.entity_id.lower() or "vorab" in state.entity_id.lower()
+        entity_lower = state.entity_id.lower()
+        friendly = str(state.attributes.get("friendly_name", "")).lower()
+        is_advance = any(
+            token in entity_lower or token in friendly
+            for token in ("advance", "vorab", "antici")
+        )
         if warning_level >= 4:
             level = 3 if is_advance else 2
         elif warning_level >= 3:
@@ -348,7 +395,6 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             f"{prefix}description",
             f"{prefix}instruction",
         )
-
         return DefconReason(
             source="DWD",
             entity_id=state.entity_id,
@@ -359,16 +405,13 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         )
 
     def _analyse_hvv(self, state: State) -> DefconReason | None:
-        """Analyse selected HVV status entities conservatively."""
         if state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE, "off", "0", "none", "None"):
             return None
 
         text = self._state_text(state).lower()
         severe = any(keyword in text for keyword in _HVV_SEVERE)
         problem = severe or any(keyword in text for keyword in _HVV_PROBLEM)
-
         if not problem:
-            # Some HVV entities expose delay as a plain minute value.
             match = re.search(r"(-?\d+)\s*(?:min|minute)", text)
             if match and int(match.group(1)) >= 15:
                 problem = True
@@ -386,7 +429,6 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         )
 
     def _analyse_generic(self, state: State) -> DefconReason | None:
-        """Analyse an optional generic problem/alarm entity."""
         if state.state in ("off", "0", "ok", "normal", STATE_UNKNOWN, STATE_UNAVAILABLE):
             return None
 
@@ -427,14 +469,35 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
 
     @staticmethod
     def _build_summary(
-        reasons: list[DefconReason], automatic_level: int, level: int, override: str
+        local_reasons: list[DefconReason],
+        local_level: int,
+        context: ContextFeed,
+        automatic_level: int,
+        level: int,
+        override: str,
     ) -> str:
-        if not reasons:
-            base = "No active warning or monitored disruption"
+        local_summary = "No active local warning"
+        if local_reasons:
+            local_summary = "; ".join(
+                reason.title for reason in local_reasons if reason.level == local_level
+            )[:700]
+
+        if context.is_fresh:
+            base = (
+                f"Local DEFCON {local_level}: {local_summary}. "
+                f"Context DEFCON {context.level}: {context.summary}"
+            )
+        elif context.status == "disabled":
+            base = f"Local DEFCON {local_level}: {local_summary}. Context feed disabled."
         else:
-            most_severe = [reason for reason in reasons if reason.level == automatic_level][:3]
-            base = "; ".join(reason.title for reason in most_severe)
+            base = (
+                f"Local DEFCON {local_level}: {local_summary}. "
+                f"Context feed {context.status}; ignored for automatic level."
+            )
 
         if override != DEFAULT_OVERRIDE and level != automatic_level:
-            return f"Manual override to DEFCON {level}. Automatic: DEFCON {automatic_level}. {base}"
+            return (
+                f"Manual override to DEFCON {level}. Automatic: DEFCON {automatic_level}. "
+                f"{base}"
+            )
         return base

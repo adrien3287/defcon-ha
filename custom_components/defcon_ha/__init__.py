@@ -37,11 +37,19 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             [StaticPathConfig(CARD_URL, str(card_path), False)]
         )
     except RuntimeError:
-        # Can happen during an integration reload if the path is already present.
         pass
 
     add_extra_js_url(hass, CARD_URL)
     hass.data[marker] = True
+
+
+async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Apply updated sources/feed settings without requiring a restart."""
+    coordinator = _entry_data(hass).get(entry.entry_id)
+    if coordinator is None:
+        return
+    coordinator.async_start()
+    await coordinator.async_request_refresh()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -53,6 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator.async_start()
 
     _entry_data(hass)[entry.entry_id] = coordinator
+    entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -67,8 +76,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         _entry_data(hass).pop(entry.entry_id, None)
 
-    # Keep the static path registered; HA cannot unregister it. Removing the injected
-    # module is enough to avoid loading a stale card after an unload.
     try:
         remove_extra_js_url(hass, CARD_URL)
         hass.data.pop(f"{DOMAIN}_frontend_registered", None)
