@@ -4,23 +4,56 @@
     "step": {
       "user": {
         "title": "DEFCON-Home-Quellen",
-        "description": "Wähle die Home-Assistant-Entitäten, die zur Gefahrenstufe des Hauses beitragen sollen. NINA, DWD und HVV werden mit unterschiedlichen Regeln ausgewertet.",
+        "description": "Konfiguriere sofortige Home-Assistant-Quellen und den privaten GitHub-Kontextfeed.",
         "data": {
           "nina_entities": "NINA-Warnungen",
           "dwd_entities": "DWD-Warnstufen",
           "hvv_entities": "HVV-Status",
-          "other_entities": "Weitere Alarm-/Statusentitäten"
+          "other_entities": "Weitere Alarm-/Statusentitäten",
+          "context_enabled": "Kontextfeed aktivieren",
+          "github_owner": "GitHub-Inhaber",
+          "github_repo": "Privates Feed-Repository",
+          "github_path": "JSON-Pfad",
+          "github_token": "GitHub-Token nur zum Lesen"
         },
         "data_description": {
-          "nina_entities": "Wähle die NINA-Warnslots für das zu überwachende Gebiet.",
-          "dwd_entities": "Wähle DWD-Sensoren für aktuelle und/oder Vorabwarnungen.",
-          "hvv_entities": "Wähle nur HVV-Entitäten, die für die Wege des Haushalts relevant sind.",
-          "other_entities": "Optional: generische Binär- oder Statussensoren. Ein aktives Problem setzt mindestens DEFCON 4."
+          "nina_entities": "Sofortige lokale Warnslots.",
+          "dwd_entities": "Aktuelle und Vorab-DWD-Warnstufen.",
+          "hvv_entities": "Optionale HVV-Störungs-/Statusentitäten.",
+          "other_entities": "Optionale lokale Alarm-/Statusentitäten.",
+          "context_enabled": "Liest den privaten DEFCON-Kontextfeed und kombiniert ihn mit lokalen Warnungen.",
+          "github_owner": "Repository-Inhaber. Standard: adrien3287.",
+          "github_repo": "Privates Feed-Repository. Standard: defcon-json.",
+          "github_path": "Pfad zum aktuellen Feed. Standard: status/current.json.",
+          "github_token": "Fine-grained GitHub-Token mit ausschließlich Contents: Read für defcon-json."
         }
       }
     },
     "abort": {
-      "single_instance_allowed": "Es kann nur eine DEFCON-Home-Instanz konfiguriert werden."
+      "single_instance_allowed": "Es kann nur eine DEFCON-Home-Instanz konfiguriert werden.",
+      "already_configured": "DEFCON Home ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "DEFCON-Home-Optionen",
+        "description": "Änderungen werden sofort angewendet. Das Token bleibt im Home-Assistant-Konfigurationsspeicher und wird nie als Entitätsattribut angezeigt.",
+        "data": {
+          "nina_entities": "NINA-Warnungen",
+          "dwd_entities": "DWD-Warnstufen",
+          "hvv_entities": "HVV-Status",
+          "other_entities": "Weitere Alarm-/Statusentitäten",
+          "context_enabled": "Kontextfeed aktivieren",
+          "github_owner": "GitHub-Inhaber",
+          "github_repo": "Privates Feed-Repository",
+          "github_path": "JSON-Pfad",
+          "github_token": "GitHub-Token nur zum Lesen"
+        },
+        "data_description": {
+          "github_token": "Dediziertes Fine-grained-Token nur mit Contents: Read für defcon-json verwenden."
+        }
+      }
     }
   }
 }
