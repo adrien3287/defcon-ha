@@ -2,66 +2,165 @@ title: DEFCON Maison
 views:
   - title: Situation
     path: defcon
-    icon: mdi:shield-alert
-    cards:
-      - type: custom:defcon-ha-card
-        entity: sensor.defcon_home_level
-        title: DEFCON Maison
-        show_sources: true
+    icon: mdi:shield-home
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Situation DEFCON
+            icon: mdi:shield-home
 
-      - type: entities
-        title: Niveaux
-        entities:
-          - entity: sensor.defcon_home_level
+          - type: tile
+            entity: sensor.defcon_home_level
             name: DEFCON final
-          - entity: sensor.defcon_home_local_level
-            name: DEFCON local
-          - entity: sensor.defcon_home_context_level
-            name: DEFCON contexte
-          - entity: select.defcon_home_manual_override
-            name: Override manuel
-          - entity: button.defcon_home_refresh
-            name: Rafraîchir maintenant
+            icon: mdi:shield-alert
+            vertical: false
+            features_position: bottom
 
-      - type: markdown
-        title: Rapport contextuel
-        content: >-
-          {% set report = state_attr('sensor.defcon_home_level', 'context_report') %}
-          {% if report %}
-          {{ report }}
-          {% else %}
-          Aucun rapport contextuel disponible pour le moment.
-          {% endif %}
+          - type: tile
+            entity: sensor.defcon_home_local_level
+            name: Local
+            icon: mdi:home-alert
+            vertical: false
+            features_position: bottom
 
-      - type: markdown
-        title: Résumé
-        content: >-
-          **Local:** DEFCON {{ state_attr('sensor.defcon_home_level', 'local_level') }}
-
-          **Contexte:** DEFCON {{ state_attr('sensor.defcon_home_level', 'context_level') }}
-
-          **Statut contexte:** {{ state_attr('sensor.defcon_home_level', 'context_status') }}
-
-          **Résumé:** {{ state_attr('sensor.defcon_home_level', 'context_summary') }}
-
-      - type: entities
-        title: État du feed
-        entities:
-          - entity: sensor.defcon_home_context_level
-            name: Feed contextuel
-          - type: attribute
+          - type: tile
             entity: sensor.defcon_home_context_level
-            attribute: status
-            name: Statut
-          - type: attribute
-            entity: sensor.defcon_home_context_level
-            attribute: generated_at
-            name: Généré
-          - type: attribute
-            entity: sensor.defcon_home_context_level
-            attribute: valid_until
-            name: Valide jusqu'à
-          - type: attribute
-            entity: sensor.defcon_home_context_level
-            attribute: error
-            name: Erreur
+            name: Contexte
+            icon: mdi:newspaper-variant-multiple
+            vertical: false
+            features_position: bottom
+
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: select.defcon_home_manual_override
+                name: Override manuel
+              - entity: button.defcon_home_refresh
+                name: Rafraîchir maintenant
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: État actuel
+            icon: mdi:information-outline
+
+          - type: markdown
+            content: |-
+              {% set e = 'sensor.defcon_home_level' %}
+              {% set final = states(e) %}
+              {% set local = state_attr(e, 'local_level') %}
+              {% set context = state_attr(e, 'context_level') %}
+              {% set status = state_attr(e, 'context_status') %}
+              {% set summary = state_attr(e, 'summary') %}
+              ## DEFCON {{ final }}
+
+              **Local :** DEFCON {{ local if local is not none else '?' }}  
+              **Contexte :** DEFCON {{ context if context is not none else '?' }}  
+              **Feed :** {{ status if status else 'inconnu' }}
+
+              {{ summary if summary else 'Aucun résumé disponible.' }}
+
+          - type: markdown
+            title: Fraîcheur du rapport
+            content: |-
+              {% set e = 'sensor.defcon_home_context_level' %}
+              **Généré :** {{ state_attr(e, 'generated_at') or 'inconnu' }}  
+              **Valide jusqu’à :** {{ state_attr(e, 'valid_until') or 'inconnu' }}  
+              **Statut :** {{ state_attr(e, 'status') or 'inconnu' }}
+              {% set err = state_attr(e, 'error') %}
+              {% if err %}
+              
+              **Erreur :** `{{ err }}`
+              {% endif %}
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Rapport contextuel
+            icon: mdi:text-box-search-outline
+
+          - type: markdown
+            content: |-
+              {% set report = state_attr('sensor.defcon_home_context_level', 'report') %}
+              {% set summary = state_attr('sensor.defcon_home_context_level', 'summary') %}
+              {% if report %}
+              {{ report }}
+              {% elif summary %}
+              {{ summary }}
+              
+              _Le rapport détaillé n'est pas encore présent dans le feed JSON courant._
+              {% else %}
+              Aucun rapport contextuel disponible.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Raisons actives
+            icon: mdi:alert-decagram-outline
+
+          - type: markdown
+            content: |-
+              {% set reasons = state_attr('sensor.defcon_home_level', 'reasons') or [] %}
+              {% if reasons %}
+              {% for r in reasons %}
+              **DEFCON {{ r.level | default('?') }} — {{ r.source | default('Source') }}**  
+              {{ r.title | default('') }}
+              {% if r.detail %}
+              
+              {{ r.detail }}
+              {% endif %}
+              
+              ---
+              {% endfor %}
+              {% else %}
+              Aucune raison active.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Signaux faibles
+            icon: mdi:radar
+
+          - type: markdown
+            content: |-
+              {% set signals = state_attr('sensor.defcon_home_context_level', 'weak_signals') or [] %}
+              {% if signals %}
+              {% for s in signals %}
+              **{{ s.scope | default('Contexte') }} — {{ s.title | default('Signal faible') }}**  
+              {{ s.relevance | default('') }}
+              
+              ---
+              {% endfor %}
+              {% else %}
+              Aucun signal faible actuellement publié.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sources locales immédiates
+            icon: mdi:access-point
+
+          - type: entities
+            state_color: true
+            entities:
+              - entity: sensor.hamburg_harburg_niveau_d_alerte_actuel
+                name: DWD — niveau actuel
+              - entity: sensor.hamburg_harburg_niveau_d_alerte_anticipee
+                name: DWD — niveau anticipé
+              - entity: binary_sensor.hamburg_freie_und_hansestadt_warning_1
+                name: NINA — avertissement 1
+              - entity: binary_sensor.hamburg_freie_und_hansestadt_warning_2
+                name: NINA — avertissement 2
+              - entity: binary_sensor.hamburg_freie_und_hansestadt_warning_3
+                name: NINA — avertissement 3
+              - entity: binary_sensor.hamburg_freie_und_hansestadt_warning_4
+                name: NINA — avertissement 4
+              - entity: binary_sensor.hamburg_freie_und_hansestadt_warning_5
+                name: NINA — avertissement 5
