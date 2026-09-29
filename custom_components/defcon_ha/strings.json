@@ -4,24 +4,56 @@
     "step": {
       "user": {
         "title": "DEFCON Home sources",
-        "description": "Select the Home Assistant entities that should contribute to the household situation level. NINA warnings, DWD warning-level sensors and HVV status entities are evaluated differently.",
+        "description": "Configure immediate Home Assistant sources and the optional private GitHub context feed.",
         "data": {
           "nina_entities": "NINA warning entities",
           "dwd_entities": "DWD warning-level entities",
           "hvv_entities": "HVV status entities",
-          "other_entities": "Other alarm/status entities"
+          "other_entities": "Other alarm/status entities",
+          "context_enabled": "Enable context feed",
+          "github_owner": "GitHub owner",
+          "github_repo": "Private feed repository",
+          "github_path": "JSON path",
+          "github_token": "GitHub read-only token"
         },
         "data_description": {
-          "nina_entities": "Select the NINA binary warning slots for the area you want to monitor.",
-          "dwd_entities": "Select current and/or advance DWD warning-level sensors.",
-          "hvv_entities": "Select only the HVV entities relevant to your household routes.",
-          "other_entities": "Optional generic binary sensors or status sensors. Active problems raise DEFCON 4."
+          "nina_entities": "Immediate local warning slots.",
+          "dwd_entities": "Current and advance DWD warning-level sensors.",
+          "hvv_entities": "Optional HVV disruption/status entities.",
+          "other_entities": "Optional local alarm/status entities.",
+          "context_enabled": "Poll the private contextual DEFCON JSON and merge it with local alerts.",
+          "github_owner": "Repository owner. Default: adrien3287.",
+          "github_repo": "Private repository containing the feed. Default: defcon-json.",
+          "github_path": "Path to the current feed. Default: status/current.json.",
+          "github_token": "Fine-grained GitHub token with Contents: Read only on the private feed repository."
         }
       }
     },
     "abort": {
       "single_instance_allowed": "Only one DEFCON Home instance can be configured.",
       "already_configured": "DEFCON Home is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "DEFCON Home options",
+        "description": "Changes are applied immediately. The GitHub token stays in Home Assistant config storage and is never exposed as a sensor attribute.",
+        "data": {
+          "nina_entities": "NINA warning entities",
+          "dwd_entities": "DWD warning-level entities",
+          "hvv_entities": "HVV status entities",
+          "other_entities": "Other alarm/status entities",
+          "context_enabled": "Enable context feed",
+          "github_owner": "GitHub owner",
+          "github_repo": "Private feed repository",
+          "github_path": "JSON path",
+          "github_token": "GitHub read-only token"
+        },
+        "data_description": {
+          "github_token": "Use a dedicated fine-grained token restricted to Contents: Read on defcon-json."
+        }
+      }
     }
   }
 }
