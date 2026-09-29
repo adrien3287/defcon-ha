@@ -1,0 +1,26 @@
+{
+  "title": "DEFCON Home",
+  "config": {
+    "step": {
+      "user": {
+        "title": "DEFCON-Home-Quellen",
+        "description": "Wähle die Home-Assistant-Entitäten, die zur Gefahrenstufe des Hauses beitragen sollen. NINA, DWD und HVV werden mit unterschiedlichen Regeln ausgewertet.",
+        "data": {
+          "nina_entities": "NINA-Warnungen",
+          "dwd_entities": "DWD-Warnstufen",
+          "hvv_entities": "HVV-Status",
+          "other_entities": "Weitere Alarm-/Statusentitäten"
+        },
+        "data_description": {
+          "nina_entities": "Wähle die NINA-Warnslots für das zu überwachende Gebiet.",
+          "dwd_entities": "Wähle DWD-Sensoren für aktuelle und/oder Vorabwarnungen.",
+          "hvv_entities": "Wähle nur HVV-Entitäten, die für die Wege des Haushalts relevant sind.",
+          "other_entities": "Optional: generische Binär- oder Statussensoren. Ein aktives Problem setzt mindestens DEFCON 4."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Es kann nur eine DEFCON-Home-Instanz konfiguriert werden."
+    }
+  }
+}
