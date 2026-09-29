@@ -4,23 +4,56 @@
     "step": {
       "user": {
         "title": "Sources DEFCON Home",
-        "description": "Sélectionne les entités Home Assistant qui doivent contribuer au niveau de situation de la maison. NINA, DWD et HVV sont analysés avec des règles distinctes.",
+        "description": "Configure les sources Home Assistant immédiates et le feed contextuel GitHub privé.",
         "data": {
           "nina_entities": "Alertes NINA",
           "dwd_entities": "Alertes DWD",
           "hvv_entities": "État HVV",
-          "other_entities": "Autres alarmes/états"
+          "other_entities": "Autres alarmes/états",
+          "context_enabled": "Activer le feed contextuel",
+          "github_owner": "Propriétaire GitHub",
+          "github_repo": "Dépôt privé du feed",
+          "github_path": "Chemin du JSON",
+          "github_token": "Token GitHub lecture seule"
         },
         "data_description": {
-          "nina_entities": "Sélectionne les slots d'alerte NINA de la zone à surveiller.",
-          "dwd_entities": "Sélectionne les capteurs DWD de niveau d'alerte actuel et/ou anticipé.",
-          "hvv_entities": "Sélectionne uniquement les entités HVV pertinentes pour les trajets du foyer.",
-          "other_entities": "Optionnel : capteurs binaires ou d'état génériques. Un problème actif déclenche DEFCON 4."
+          "nina_entities": "Slots d'alerte locale immédiate.",
+          "dwd_entities": "Capteurs DWD actuel et anticipé.",
+          "hvv_entities": "Entités HVV optionnelles de perturbation/état.",
+          "other_entities": "Autres capteurs locaux optionnels.",
+          "context_enabled": "Récupère le JSON DEFCON contextuel privé et le fusionne avec les alertes locales.",
+          "github_owner": "Propriétaire du dépôt. Défaut : adrien3287.",
+          "github_repo": "Dépôt privé contenant le feed. Défaut : defcon-json.",
+          "github_path": "Chemin du feed courant. Défaut : status/current.json.",
+          "github_token": "Token GitHub fine-grained limité à Contents: Read sur le seul dépôt defcon-json."
         }
       }
     },
     "abort": {
-      "single_instance_allowed": "Une seule instance DEFCON Home peut être configurée."
+      "single_instance_allowed": "Une seule instance DEFCON Home peut être configurée.",
+      "already_configured": "DEFCON Home est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options DEFCON Home",
+        "description": "Les changements sont appliqués immédiatement. Le token reste dans le stockage de configuration Home Assistant et n'est jamais exposé comme attribut d'entité.",
+        "data": {
+          "nina_entities": "Alertes NINA",
+          "dwd_entities": "Alertes DWD",
+          "hvv_entities": "État HVV",
+          "other_entities": "Autres alarmes/états",
+          "context_enabled": "Activer le feed contextuel",
+          "github_owner": "Propriétaire GitHub",
+          "github_repo": "Dépôt privé du feed",
+          "github_path": "Chemin du JSON",
+          "github_token": "Token GitHub lecture seule"
+        },
+        "data_description": {
+          "github_token": "Utilise un token fine-grained dédié, limité à Contents: Read sur defcon-json."
+        }
+      }
     }
   }
 }
