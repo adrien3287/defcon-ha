@@ -105,14 +105,11 @@ class DefconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> DefconOptionsFlow:
         """Return options flow."""
-        return DefconOptionsFlow(config_entry)
+        return DefconOptionsFlow()
 
 
 class DefconOptionsFlow(config_entries.OptionsFlow):
     """Edit DEFCON Home sources and private context feed settings."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
