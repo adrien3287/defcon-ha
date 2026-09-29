@@ -114,6 +114,10 @@ views:
               
               {{ r.detail }}
               {% endif %}
+              {% if r.source_url | default('') %}
+              
+              [Ouvrir la source — {{ r.source | default('source') }}]({{ r.source_url }})
+              {% endif %}
               
               ---
               {% endfor %}
@@ -134,11 +138,38 @@ views:
               {% for s in signals %}
               **{{ s.scope | default('Contexte') }} — {{ s.title | default('Signal faible') }}**  
               {{ s.relevance | default('') }}
+              {% if s.source_url | default('') %}
+              
+              [Ouvrir la source — {{ s.source_name | default('source') }}]({{ s.source_url }})
+              {% endif %}
               
               ---
               {% endfor %}
               {% else %}
               Aucun signal faible actuellement publié.
+              {% endif %}
+
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sources du rapport
+            icon: mdi:link-variant
+
+          - type: markdown
+            content: |-
+              {% set reasons = state_attr('sensor.defcon_home_context_level', 'reasons') or [] %}
+              {% set ns = namespace(count=0) %}
+              {% for r in reasons %}
+              {% if r.source_url | default('') %}
+              {% set ns.count = ns.count + 1 %}
+              **{{ r.source_name | default('Source') }}** — {{ r.title | default('') }}  
+              [Consulter la source originale]({{ r.source_url }})
+              
+              {% endif %}
+              {% endfor %}
+              {% if ns.count == 0 %}
+              Aucune URL source publiée dans le rapport actuel.
               {% endif %}
 
       - type: grid
