@@ -1,10 +1,10 @@
 {
   "domain": "defcon_ha",
   "name": "DEFCON Home",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "config_flow": true,
   "single_config_entry": true,
-  "integration_type": "helper",
+  "integration_type": "service",
   "iot_class": "calculated",
   "documentation": "https://github.com/adrien3287/defcon-ha",
   "issue_tracker": "https://github.com/adrien3287/defcon-ha/issues",
