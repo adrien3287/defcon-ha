@@ -76,7 +76,6 @@ class DefconSnapshot:
     context_valid_until: datetime | None
     context_error: str
     context_report: str
-    context_report: str
     level_name: str
     color: str
     summary: str
@@ -130,7 +129,6 @@ class DefconSnapshot:
             "context_generated_at": self.context_generated_at.isoformat() if self.context_generated_at else None,
             "context_valid_until": self.context_valid_until.isoformat() if self.context_valid_until else None,
             "context_error": self.context_error,
-            "context_report": self.context_report,
             "context_report": self.context_report,
             "level_name": self.level_name,
             "color": self.color,
@@ -263,7 +261,6 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             context_generated_at=context.generated_at,
             context_valid_until=context.valid_until,
             context_error=context.error,
-            context_report=context.report_markdown,
             context_report=context.report_markdown,
             level_name=LEVEL_NAMES[level],
             color=LEVEL_COLORS[level],
