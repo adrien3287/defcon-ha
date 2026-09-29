@@ -112,6 +112,7 @@ class DefconHaCard extends HTMLElement {
     const reasons = Array.isArray(attrs.reasons) ? attrs.reasons : [];
     const sourceEntities = Array.isArray(attrs.source_entities) ? attrs.source_entities : [];
     const manual = attrs.manual_override || "auto";
+    const report = attrs.context_report || "";
     const evaluated = attrs.evaluated_at
       ? new Date(attrs.evaluated_at).toLocaleString(this._hass.language)
       : "";
@@ -147,6 +148,7 @@ class DefconHaCard extends HTMLElement {
         .body { padding: 14px 16px 16px; }
         .context-box { background: var(--secondary-background-color); border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.35; }
         .context-meta { margin-top: 5px; font-size: 11px; opacity: .62; }
+        .report { white-space: pre-wrap; font-size: 13px; line-height: 1.45; background: var(--secondary-background-color); border-radius: 10px; padding: 12px; margin: 10px 0 14px; }
         .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .65; margin-bottom: 8px; }
         .reason { padding: 10px 0; border-top: 1px solid var(--divider-color); }
         .reason:first-of-type { border-top: 0; }
@@ -179,6 +181,7 @@ class DefconHaCard extends HTMLElement {
         <div class="body">
           <div class="section-title">Context</div>
           <div class="context-box">${this._escape(attrs.context_summary || "No context feed available")}<div class="context-meta">Status: ${this._escape(contextStatus)} · valid until: ${this._escape(attrs.context_valid_until || "—")}</div></div>
+          ${report ? `<div class="section-title">Rapport contextuel</div><div class="report">${this._escape(report)}</div>` : ""}
           <div class="section-title">${labels.reasons}</div>
           ${reasonsHtml}
           ${sourceHtml}
