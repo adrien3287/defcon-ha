@@ -40,6 +40,7 @@ class ContextFeed:
     status: str
     error: str = ""
     report_markdown: str = ""
+    report_markdown: str = ""
 
     @property
     def is_fresh(self) -> bool:
@@ -178,6 +179,7 @@ async def async_fetch_context_feed(
     summary = str(payload.get("summary", "")).strip()
     reasons = _normalize_list(payload.get("reasons"))
     weak_signals = _normalize_list(payload.get("weak_signals"))
+    report_markdown = str(payload.get("report_markdown", "")).strip()
     report_markdown = str(payload.get("report_markdown", "")).strip()
 
     if level is None or valid_until is None:
