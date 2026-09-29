@@ -105,6 +105,9 @@ class DefconHaCard extends HTMLElement {
     const attrs = stateObj.attributes || {};
     const level = Number(stateObj.state) || 5;
     const autoLevel = Number(attrs.automatic_level) || level;
+    const localLevel = Number(attrs.local_level) || 5;
+    const contextLevel = attrs.context_level == null ? null : Number(attrs.context_level);
+    const contextStatus = attrs.context_status || "unknown";
     const color = attrs.color || "var(--primary-color)";
     const reasons = Array.isArray(attrs.reasons) ? attrs.reasons : [];
     const sourceEntities = Array.isArray(attrs.source_entities) ? attrs.source_entities : [];
@@ -142,6 +145,8 @@ class DefconHaCard extends HTMLElement {
         .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .pill { border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 4px 8px; font-size: 12px; }
         .body { padding: 14px 16px 16px; }
+        .context-box { background: var(--secondary-background-color); border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.35; }
+        .context-meta { margin-top: 5px; font-size: 11px; opacity: .62; }
         .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .65; margin-bottom: 8px; }
         .reason { padding: 10px 0; border-top: 1px solid var(--divider-color); }
         .reason:first-of-type { border-top: 0; }
@@ -165,11 +170,15 @@ class DefconHaCard extends HTMLElement {
           </div>
           <div class="summary">${this._escape(attrs.summary || labels.noReasons)}</div>
           <div class="meta">
+            <span class="pill">Local: DEFCON ${this._escape(localLevel)}</span>
+            <span class="pill">Context: ${contextLevel == null ? "—" : "DEFCON " + this._escape(contextLevel)} (${this._escape(contextStatus)})</span>
             <span class="pill">${labels.automatic}: DEFCON ${this._escape(autoLevel)}</span>
             ${manual !== "auto" ? `<span class="pill">${labels.manual}: ${this._escape(manual.replace("defcon_", "DEFCON "))}</span>` : ""}
           </div>
         </div>
         <div class="body">
+          <div class="section-title">Context</div>
+          <div class="context-box">${this._escape(attrs.context_summary || "No context feed available")}<div class="context-meta">Status: ${this._escape(contextStatus)} · valid until: ${this._escape(attrs.context_valid_until || "—")}</div></div>
           <div class="section-title">${labels.reasons}</div>
           ${reasonsHtml}
           ${sourceHtml}
