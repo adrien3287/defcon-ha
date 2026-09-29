@@ -1,0 +1,26 @@
+{
+  "title": "DEFCON Home",
+  "config": {
+    "step": {
+      "user": {
+        "title": "DEFCON Home sources",
+        "description": "Select the Home Assistant entities that should contribute to the household situation level. NINA warnings, DWD warning-level sensors and HVV status entities are evaluated differently.",
+        "data": {
+          "nina_entities": "NINA warning entities",
+          "dwd_entities": "DWD warning-level entities",
+          "hvv_entities": "HVV status entities",
+          "other_entities": "Other alarm/status entities"
+        },
+        "data_description": {
+          "nina_entities": "Select the NINA binary warning slots for the area you want to monitor.",
+          "dwd_entities": "Select current and/or advance DWD warning-level sensors.",
+          "hvv_entities": "Select only the HVV entities relevant to your household routes.",
+          "other_entities": "Optional generic binary sensors or status sensors. Active problems raise DEFCON 4."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one DEFCON Home instance can be configured."
+    }
+  }
+}
