@@ -50,30 +50,140 @@ views:
           - type: markdown
             content: |-
               {% set e = 'sensor.defcon_home_level' %}
-              {% set final = states(e) %}
+              {% set final = states(e) | int(5) %}
               {% set local = state_attr(e, 'local_level') %}
               {% set context = state_attr(e, 'context_level') %}
-              {% set status = state_attr(e, 'context_status') %}
-              {% set summary = state_attr(e, 'summary') %}
-              ## DEFCON {{ final }}
+              {% set raw_status = state_attr(e, 'context_status') or 'unknown' %}
+              {% set status_fr = {
+                'fresh': 'À jour',
+                'stale': 'Périmé',
+                'error': 'Erreur',
+                'disabled': 'Désactivé',
+                'unknown': 'Inconnu'
+              } %}
+              {% set context_summary = state_attr(e, 'context_summary') %}
 
-              **Local :** DEFCON {{ local if local is not none else '?' }}  
-              **Contexte :** DEFCON {{ context if context is not none else '?' }}  
-              **Feed :** {{ status if status else 'inconnu' }}
+              # DEFCON {{ final }}
 
-              {{ summary if summary else 'Aucun résumé disponible.' }}
+              **Niveau local :** DEFCON {{ local if local is not none else '?' }}  
+              **Analyse contextuelle :** DEFCON {{ context if context is not none else '?' }}  
+              **Flux contextuel :** {{ status_fr.get(raw_status, raw_status) }}
+
+              {% if context_summary %}
+              {{ context_summary }}
+              {% else %}
+              Aucun résumé contextuel disponible.
+              {% endif %}
 
           - type: markdown
-            title: Fraîcheur du rapport
+            title: Actualisation du rapport
             content: |-
               {% set e = 'sensor.defcon_home_context_level' %}
-              **Généré :** {{ state_attr(e, 'generated_at') or 'inconnu' }}  
+              {% set raw_status = state_attr(e, 'status') or 'unknown' %}
+              {% set status_fr = {
+                'fresh': 'À jour',
+                'stale': 'Périmé',
+                'error': 'Erreur',
+                'disabled': 'Désactivé',
+                'unknown': 'Inconnu'
+              } %}
+
+              **Dernière analyse :** {{ state_attr(e, 'generated_at') or 'inconnue' }}  
               **Valide jusqu’à :** {{ state_attr(e, 'valid_until') or 'inconnu' }}  
-              **Statut :** {{ state_attr(e, 'status') or 'inconnu' }}
+              **État :** {{ status_fr.get(raw_status, raw_status) }}
+
               {% set err = state_attr(e, 'error') %}
               {% if err %}
-              
-              **Erreur :** `{{ err }}`
+
+              **Erreur technique :** `{{ err }}`
+              {% endif %}
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Checklist correspondant au niveau actuel
+            icon: mdi:clipboard-check-outline
+
+          - type: markdown
+            content: |-
+              {% set level = states('sensor.defcon_home_level') | int(5) %}
+
+              {% if level == 5 %}
+              ## DEFCON 5 — Situation normale
+
+              ☐ Maintenir **au moins 300 L d’eau** et ne jamais descendre sous 250 L.  
+              ☐ Maintenir le fioul idéalement autour de **1 500 L**, minimum 1 000 L.  
+              ☐ Garder **au moins 2 bouteilles GPL de 11 kg pleines**.  
+              ☐ Garder la voiture à **au moins 2/3 du plein**, jamais sous 1/2.  
+              ☐ Maintenir les batteries maison à **≥ 50 %** ; en hiver viser 75–80 %.  
+              ☐ Entretenir le groupe électrogène et vérifier régulièrement son démarrage.  
+              ☐ Maintenir radios PMR/FM, lampes, powerbanks, stocks alimentaires et médicaments.  
+              ☐ Vérifier périodiquement détecteurs fumée/CO, extincteurs et matériel du refuge.  
+              ☐ Garder sacs d’urgence, documents hors ligne et moyens de paiement alternatifs prêts.
+
+              **Consigne :** vie normale, simple maintien de la préparation.
+
+              {% elif level == 4 %}
+              ## DEFCON 4 — Vigilance renforcée
+
+              ☐ Vie normale, mais suivre **NINA / Cell Broadcast / sources officielles**.  
+              ☐ Charger téléphones, powerbanks et batteries Dyness à **90–100 %**.  
+              ☐ Monter la voiture à **80–90 % du plein** et vérifier la disponibilité du carburant.  
+              ☐ Vérifier GPL, groupe électrogène, PMR, lampes et piles.  
+              ☐ Contrôler eau, nourriture et médicaments essentiels.  
+              ☐ Garder les BOB / sacs d’urgence facilement accessibles.  
+              ☐ Éviter de commencer un travail susceptible d’immobiliser chauffage, électricité ou véhicule.  
+              ☐ Faire un point de situation au minimum matin et soir.
+
+              **Consigne :** surveillance accrue, sans changement majeur du quotidien.
+
+              {% elif level == 3 %}
+              ## DEFCON 3 — Préparation active
+
+              ☐ Faire **le plein de la voiture**.  
+              ☐ Constituer jusqu’à **50 L d’essence en jerricans** dans les conditions de stockage prévues.  
+              ☐ Viser **3 × 11 kg de GPL** disponibles si possible.  
+              ☐ Mettre Dyness et powerbanks à **100 %**.  
+              ☐ Confirmer **≥ 300 L d’eau potable** disponibles.  
+              ☐ Tester le groupe électrogène et la pompe de vide-cave.  
+              ☐ Mettre les BOB / sacs de départ en position immédiatement accessible.  
+              ☐ Regrouper documents importants, clés et espèces.  
+              ☐ Vérifier l’option de repli vers **Metz** et l’itinéraire correspondant.  
+              ☐ Vérifier radios, PMR et réception des alertes NINA.  
+              ☐ Commencer à limiter les consommations énergétiques non essentielles.
+
+              **Consigne :** préparer concrètement l’autonomie et un éventuel changement rapide de situation.
+
+              {% elif level == 2 %}
+              ## DEFCON 2 — Crise majeure / autonomie immédiate
+
+              ☐ Confirmer où se trouve chaque membre de la famille et activer les PMR si nécessaire.  
+              ☐ Limiter les déplacements non indispensables.  
+              ☐ Contrôler immédiatement eau, alimentation, batteries et moyens de secours.  
+              ☐ Préparer le refuge et rendre eau, nourriture, lampes et radios directement accessibles.  
+              ☐ Arrêter les charges électriques non essentielles ; prioriser chauffage et réfrigération.  
+              ☐ Appliquer une gestion stricte du SoC et utiliser le groupe électrogène de façon intermittente si nécessaire.  
+              ☐ Garder téléphones chargés et appliquer les horaires de communication familiaux.  
+              ☐ Véhicule, BOB, documents, clés et espèces prêts au départ.  
+              ☐ Vérifier itinéraire principal et itinéraire alternatif.  
+              ☐ Suivre uniquement les informations officielles pour les décisions immédiates.
+
+              **Consigne :** autonomie active ; rester à domicile sauf nécessité ou instruction officielle.
+
+              {% elif level == 1 %}
+              ## DEFCON 1 — Danger immédiat
+
+              ☐ Mettre immédiatement la famille **à l’abri** et suivre les instructions officielles.  
+              ☐ Fermer portes et fenêtres ; en cas de fumée ou contamination extérieure, couper la ventilation non filtrée.  
+              ☐ Rejoindre le refuge prévu si la nature de l’événement le justifie.  
+              ☐ Garder radio, téléphones, PMR, eau, lampes et trousse d’urgence à portée immédiate.  
+              ☐ Ne pas se déplacer sauf danger sur place ou ordre/recommandation d’évacuation.  
+              ☐ En cas d’évacuation officielle : prendre BOB, documents, clés, eau et suivre l’itinéraire indiqué par les autorités.  
+              ☐ Maintenir le suivi permanent des alertes officielles.
+
+              **Consigne :** protection immédiate des personnes avant toute autre considération.
+
               {% endif %}
 
       - type: grid
@@ -114,6 +224,10 @@ views:
               
               {{ r.detail }}
               {% endif %}
+              {% if r.source_url | default('') %}
+              
+              [Ouvrir la source — {{ r.source | default('source') }}]({{ r.source_url }})
+              {% endif %}
               
               ---
               {% endfor %}
@@ -134,11 +248,38 @@ views:
               {% for s in signals %}
               **{{ s.scope | default('Contexte') }} — {{ s.title | default('Signal faible') }}**  
               {{ s.relevance | default('') }}
+              {% if s.source_url | default('') %}
+              
+              [Ouvrir la source — {{ s.source_name | default('source') }}]({{ s.source_url }})
+              {% endif %}
               
               ---
               {% endfor %}
               {% else %}
               Aucun signal faible actuellement publié.
+              {% endif %}
+
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sources du rapport
+            icon: mdi:link-variant
+
+          - type: markdown
+            content: |-
+              {% set reasons = state_attr('sensor.defcon_home_context_level', 'reasons') or [] %}
+              {% set ns = namespace(count=0) %}
+              {% for r in reasons %}
+              {% if r.source_url | default('') %}
+              {% set ns.count = ns.count + 1 %}
+              **{{ r.source_name | default('Source') }}** — {{ r.title | default('') }}  
+              [Consulter la source originale]({{ r.source_url }})
+              
+              {% endif %}
+              {% endfor %}
+              {% if ns.count == 0 %}
+              Aucune URL source publiée dans le rapport actuel.
               {% endif %}
 
       - type: grid

@@ -479,7 +479,7 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         level: int,
         override: str,
     ) -> str:
-        local_summary = "No active local warning"
+        local_summary = "Aucune alerte locale active"
         if local_reasons:
             local_summary = "; ".join(
                 reason.title for reason in local_reasons if reason.level == local_level
@@ -487,20 +487,20 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
 
         if context.is_fresh:
             base = (
-                f"Local DEFCON {local_level}: {local_summary}. "
-                f"Context DEFCON {context.level}: {context.summary}"
+                f"DEFCON local {local_level} : {local_summary}. "
+                f"DEFCON contextuel {context.level} : {context.summary}"
             )
         elif context.status == "disabled":
-            base = f"Local DEFCON {local_level}: {local_summary}. Context feed disabled."
+            base = f"DEFCON local {local_level} : {local_summary}. Flux contextuel désactivé."
         else:
             base = (
-                f"Local DEFCON {local_level}: {local_summary}. "
-                f"Context feed {context.status}; ignored for automatic level."
+                f"DEFCON local {local_level} : {local_summary}. "
+                f"Flux contextuel {context.status} ; ignoré dans le calcul automatique."
             )
 
         if override != DEFAULT_OVERRIDE and level != automatic_level:
             return (
-                f"Manual override to DEFCON {level}. Automatic: DEFCON {automatic_level}. "
+                f"Override manuel vers DEFCON {level}. Niveau automatique : DEFCON {automatic_level}. "
                 f"{base}"
             )
         return base

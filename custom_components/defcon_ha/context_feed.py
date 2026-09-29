@@ -81,7 +81,7 @@ async def async_fetch_context_feed(
     if not settings.get(CONF_CONTEXT_ENABLED, DEFAULT_CONTEXT_ENABLED):
         return ContextFeed(
             level=None,
-            summary="Context feed disabled",
+            summary="Flux contextuel désactivé",
             reasons=[],
             weak_signals=[],
             generated_at=None,
@@ -98,7 +98,7 @@ async def async_fetch_context_feed(
     if not owner or not repo or not path:
         return ContextFeed(
             level=None,
-            summary="Context feed is not configured",
+            summary="Flux contextuel non configuré",
             reasons=[],
             weak_signals=[],
             generated_at=None,
@@ -134,7 +134,7 @@ async def async_fetch_context_feed(
     except (TimeoutError, ClientError, ValueError) as err:
         return ContextFeed(
             level=None,
-            summary="Context feed unavailable",
+            summary="Flux contextuel indisponible",
             reasons=[],
             weak_signals=[],
             generated_at=None,
@@ -149,7 +149,7 @@ async def async_fetch_context_feed(
     except json.JSONDecodeError:
         return ContextFeed(
             level=None,
-            summary="Context feed contains invalid JSON",
+            summary="Le flux contextuel contient un JSON invalide",
             reasons=[],
             weak_signals=[],
             generated_at=None,
@@ -162,7 +162,7 @@ async def async_fetch_context_feed(
     if not isinstance(payload, dict):
         return ContextFeed(
             level=None,
-            summary="Context feed has an invalid root object",
+            summary="Le flux contextuel contient un objet racine invalide",
             reasons=[],
             weak_signals=[],
             generated_at=None,
@@ -183,7 +183,7 @@ async def async_fetch_context_feed(
     if level is None or valid_until is None:
         return ContextFeed(
             level=level,
-            summary=summary or "Context feed is incomplete",
+            summary=summary or "Flux contextuel incomplet",
             reasons=reasons,
             weak_signals=weak_signals,
             generated_at=generated_at,

@@ -83,6 +83,15 @@ class DefconHaCard extends HTMLElement {
       .replaceAll("'", "&#039;");
   }
 
+  _safeUrl(value) {
+    try {
+      const url = new URL(String(value || ""));
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch {
+      return "";
+    }
+  }
+
   _sourceIcon(source) {
     switch ((source || "").toUpperCase()) {
       case "NINA": return "\u26a0";
@@ -118,7 +127,9 @@ class DefconHaCard extends HTMLElement {
       : "";
 
     const reasonsHtml = reasons.length
-      ? reasons.map((reason) => `
+      ? reasons.map((reason) => {
+          const sourceUrl = this._safeUrl(reason.source_url);
+          return `
           <div class="reason">
             <div class="reason-head">
               <span class="source">${this._escape(this._sourceIcon(reason.source))} ${this._escape(reason.source)}</span>
@@ -126,7 +137,9 @@ class DefconHaCard extends HTMLElement {
             </div>
             <div class="reason-title">${this._escape(reason.title)}</div>
             ${reason.detail ? `<div class="reason-detail">${this._escape(reason.detail)}</div>` : ""}
-          </div>`).join("")
+            ${sourceUrl ? `<div class="reason-link"><a href="${this._escape(sourceUrl)}" target="_blank" rel="noopener noreferrer">Ouvrir la source</a></div>` : ""}
+          </div>`;
+        }).join("")
       : `<div class="empty">${labels.noReasons}</div>`;
 
     const sourceHtml = this._config.show_sources !== false && sourceEntities.length
@@ -157,6 +170,9 @@ class DefconHaCard extends HTMLElement {
         .reason-level { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 7px; background: var(--secondary-background-color); }
         .reason-title { margin-top: 4px; font-weight: 650; line-height: 1.25; }
         .reason-detail { margin-top: 4px; font-size: 13px; line-height: 1.35; opacity: .78; }
+        .reason-link { margin-top: 6px; font-size: 12px; }
+        .reason-link a { color: var(--primary-color); text-decoration: none; }
+        .reason-link a:hover { text-decoration: underline; }
         .empty { font-size: 14px; opacity: .72; padding: 4px 0 8px; }
         .sources { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider-color); font-size: 11px; opacity: .72; }
         .sources code { background: var(--secondary-background-color); border-radius: 4px; padding: 2px 5px; }
