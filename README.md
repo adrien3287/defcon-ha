@@ -9,7 +9,7 @@ Version 0.3 removes the private GitHub JSON/context feed completely. The automat
 Home Assistant entities are grouped into two domains:
 
 - **External situation**: NINA, DWD current + advance, flood warning levels, PEGELONLINE, UBA LQI, BfS ODL assessments, Blitzortung and NOAA Space Weather.
-- **House infrastructure**: boiler-room heat/smoke detection, three-phase grid voltage, Victron grid-loss alarm, battery SOC and the two Internet WAN links.
+- **House infrastructure**: whole-house fire detection (smoke/heat loop), three-phase grid voltage, Victron grid-loss alarm, battery SOC and the two Internet WAN links.
 
 NASA FIRMS remains useful for the situation map but is **explicitly excluded from the DEFCON calculation**.
 
@@ -42,8 +42,10 @@ Flood-warning entities are configurable but intentionally have no hard-coded def
 
 ### House infrastructure
 
-- Heat: `binary_sensor.chaufferie_detection_incendie_entree_0`
-- Smoke: `binary_sensor.chaufferie_detection_incendie_entree_1`
+- Smoke: `binary_sensor.chaufferie_detection_incendie_entree_0`
+- Heat: `binary_sensor.chaufferie_detection_incendie_entree_1`
+
+The entity IDs still contain `chaufferie`, but the two inputs represent the fire-detection loop for the whole house.
 - Grid voltage: Shelly Pro 3EM L1/L2/L3 voltage sensors.
 - Victron: MultiPlus grid-lost alarm.
 - Battery: Victron battery SOC.
