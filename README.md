@@ -85,13 +85,14 @@ Raw centimetre values are not used as universal thresholds.
 
 ### UBA LQI
 
-Air quality is deliberately weighted conservatively in the household DEFCON:
+Air quality is deliberately weighted conservatively and requires corroboration:
 
-- 0-2 (very good / good / moderate) -> normal
-- 3 (poor) -> DEFCON 4
-- 4+ (very poor) -> DEFCON 3
+- LQI 0-2 -> normal
+- one isolated LQI 3 -> no DEFCON change
+- at least two monitored stations at LQI 3+ -> DEFCON 4
+- at least one monitored station at LQI 4+ -> DEFCON 4
 
-Ambient air quality alone never drives DEFCON 1 or 2.
+Ambient air quality alone never drives DEFCON 1, 2 or 3.
 
 ### BfS ODL
 
