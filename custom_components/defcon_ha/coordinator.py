@@ -560,14 +560,17 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             "Blitzortung count",
             degraded,
         )
+        count = max((self._as_float(s.state) or 0 for s in counts), default=0)
+        if count <= 0:
+            return None
+
+        # Blitzortung distance is often "unknown" when there has been no strike.
+        # Only evaluate its availability after a non-zero strike count.
         distances = self._states(
             self._configured(CONF_LIGHTNING_DISTANCE_ENTITIES, DEFAULT_LIGHTNING_DISTANCE_ENTITIES),
             "Blitzortung distance",
             degraded,
         )
-        count = max((self._as_float(s.state) or 0 for s in counts), default=0)
-        if count <= 0:
-            return None
         distance_values = [self._as_float(s.state) for s in distances]
         distance_values = [v for v in distance_values if v is not None]
         distance = min(distance_values) if distance_values else None
