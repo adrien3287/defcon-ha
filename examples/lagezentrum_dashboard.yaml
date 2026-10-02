@@ -67,9 +67,9 @@ views:
         state_color: true
         entities:
           - entity: binary_sensor.chaufferie_detection_incendie_entree_0
-            name: Chaufferie - chaleur
+            name: Maison - fumée
           - entity: binary_sensor.chaufferie_detection_incendie_entree_1
-            name: Chaufferie - fumée
+            name: Maison - chaleur
           - entity: sensor.multiplus_48_2000_25_32_id_289_grid_lost_alarm
             name: Victron - perte réseau
           - entity: sensor.victron_over_mqtt_battery_soc
@@ -213,13 +213,13 @@ views:
     type: masonry
     cards:
       - type: entities
-        title: Incendie chaufferie
+        title: Incendie maison
         state_color: true
         entities:
           - entity: binary_sensor.chaufferie_detection_incendie_entree_0
-            name: Chaleur
-          - entity: binary_sensor.chaufferie_detection_incendie_entree_1
             name: Fumée
+          - entity: binary_sensor.chaufferie_detection_incendie_entree_1
+            name: Chaleur
 
       - type: entities
         title: Réseau électrique
