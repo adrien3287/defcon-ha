@@ -85,11 +85,13 @@ Raw centimetre values are not used as universal thresholds.
 
 ### UBA LQI
 
-- 0-1 -> normal
-- 2 -> DEFCON 4
-- 3 -> DEFCON 3
-- 4 -> DEFCON 2
-- 5+ -> DEFCON 1
+Air quality is deliberately weighted conservatively in the household DEFCON:
+
+- 0-2 (very good / good / moderate) -> normal
+- 3 (poor) -> DEFCON 4
+- 4+ (very poor) -> DEFCON 3
+
+Ambient air quality alone never drives DEFCON 1 or 2.
 
 ### BfS ODL
 
