@@ -1,0 +1,285 @@
+title: Lagezentrum
+views:
+  - title: Situation
+    path: situation
+    icon: mdi:shield-home
+    type: masonry
+    cards:
+      - type: custom:defcon-ha-card
+        entity: sensor.defcon_home_level
+        title: DEFCON Maison
+        show_sources: false
+
+      - type: entities
+        title: Synthèse
+        state_color: true
+        entities:
+          - entity: sensor.defcon_home_external_level
+            name: Situation externe
+          - entity: sensor.defcon_home_infrastructure_level
+            name: Infrastructure maison
+          - entity: sensor.defcon_home_source_health
+            name: Santé des sources
+          - entity: select.defcon_home_manual_override
+            name: Override manuel
+          - entity: button.defcon_home_refresh
+            name: Recalculer maintenant
+
+      - type: weather-forecast
+        entity: weather.marmstorf
+        name: Météo locale
+        show_forecast: true
+
+      - type: entities
+        title: Météo / alertes immédiates
+        state_color: true
+        entities:
+          - entity: sensor.hamburg_harburg_niveau_d_alerte_actuel
+            name: DWD actuel
+          - entity: sensor.hamburg_harburg_niveau_d_alerte_anticipee
+            name: DWD anticipé
+          - entity: sensor.marmstorf_radar_precipitation_now
+            name: Radar pluie maintenant
+          - entity: sensor.marmstorf_radar_next_precipitation
+            name: Prochaine pluie radar
+          - entity: sensor.marmstorf_wind_gusts
+            name: Rafales
+          - entity: sensor.marmstorf_visibility
+            name: Visibilité
+          - entity: sensor.maison_compteur_de_foudre
+            name: Impacts de foudre
+          - entity: sensor.maison_distance_de_foudre
+            name: Foudre la plus proche
+
+      - type: map
+        title: Situation externe
+        auto_fit: true
+        entities:
+          - geo_location.situation_externe_hamburg_neugraben_hamburg_dehh050_hamburg_neugraben
+          - geo_location.situation_externe_hamburg_wilhelmsburg_hamburg_dehh059_hamburg_wilhelmsburg
+          - geo_location.situation_externe_hamburg_veddel_hamburg_dehh015_hamburg_veddel
+          - geo_location.situation_externe_rosengarten_21224_033530292_rosengarten
+          - geo_location.situation_externe_hamburg_wilhelmsburg_21109_020000006_hamburg_wilhelmsburg
+          - geo_location.situation_externe_stelle_harburg_21435_033530321_stelle_harburg
+
+      - type: entities
+        title: Maison
+        state_color: true
+        entities:
+          - entity: binary_sensor.chaufferie_detection_incendie_entree_0
+            name: Chaufferie - chaleur
+          - entity: binary_sensor.chaufferie_detection_incendie_entree_1
+            name: Chaufferie - fumée
+          - entity: sensor.multiplus_48_2000_25_32_id_289_grid_lost_alarm
+            name: Victron - perte réseau
+          - entity: sensor.victron_over_mqtt_battery_soc
+            name: Batterie
+          - entity: binary_sensor.b0_19_21_50_7d_5b_port_1_internet_link
+            name: Telekom
+          - entity: binary_sensor.b0_19_21_50_7d_5b_port_2_internet_link
+            name: Vodafone
+
+  - title: Externe
+    path: externe
+    icon: mdi:earth
+    type: masonry
+    cards:
+      - type: entities
+        title: NINA
+        state_color: true
+        entities:
+          - binary_sensor.hamburg_freie_und_hansestadt_warning_1
+          - binary_sensor.hamburg_freie_und_hansestadt_warning_2
+          - binary_sensor.hamburg_freie_und_hansestadt_warning_3
+          - binary_sensor.hamburg_freie_und_hansestadt_warning_4
+          - binary_sensor.hamburg_freie_und_hansestadt_warning_5
+
+      - type: entities
+        title: DWD
+        entities:
+          - entity: sensor.hamburg_harburg_niveau_d_alerte_actuel
+            name: Alerte actuelle
+          - entity: sensor.hamburg_harburg_niveau_d_alerte_anticipee
+            name: Alerte anticipée
+          - entity: sensor.marmstorf_weather_condition
+            name: Condition actuelle
+          - entity: sensor.marmstorf_precipitation
+            name: Précipitations
+          - entity: sensor.marmstorf_radar_precipitation_now
+            name: Radar maintenant
+          - entity: sensor.marmstorf_radar_next_precipitation
+            name: Prochaine précipitation
+          - entity: sensor.marmstorf_wind_speed
+            name: Vent
+          - entity: sensor.marmstorf_wind_gusts
+            name: Rafales
+          - entity: sensor.marmstorf_visibility
+            name: Visibilité
+          - entity: sensor.marmstorf_pression
+            name: Pression
+
+      - type: entities
+        title: Hydrologie
+        entities:
+          - entity: sensor.hamburg_st_pauli_elbe_stage
+            name: Hamburg St. Pauli - Stage
+          - entity: sensor.hamburg_st_pauli_elbe_level
+            name: Hamburg St. Pauli - Niveau
+          - entity: sensor.hamburg_st_pauli_elbe_niveau_d_eau
+            name: Niveau d'eau
+
+      - type: entities
+        title: Qualité de l'air UBA
+        entities:
+          - entity: sensor.hamburg_neugraben_hamburg_dehh050_lqi_numerisch
+            name: Neugraben
+          - entity: sensor.hamburg_wilhelmsburg_hamburg_dehh059_lqi_numerisch
+            name: Wilhelmsburg
+          - entity: sensor.hamburg_veddel_hamburg_dehh015_lqi_numerisch
+            name: Veddel
+
+      - type: history-graph
+        title: Historique LQI
+        hours_to_show: 24
+        entities:
+          - sensor.hamburg_neugraben_hamburg_dehh050_lqi_numerisch
+          - sensor.hamburg_wilhelmsburg_hamburg_dehh059_lqi_numerisch
+          - sensor.hamburg_veddel_hamburg_dehh015_lqi_numerisch
+
+      - type: entities
+        title: Radiation BfS ODL
+        entities:
+          - entity: sensor.rosengarten_21224_033530292_measurement_assessment
+            name: Rosengarten - évaluation
+          - entity: sensor.rosengarten_21224_033530292_gamma_odl_1h
+            name: Rosengarten
+          - entity: sensor.hamburg_wilhelmsburg_21109_020000006_measurement_assessment
+            name: Wilhelmsburg - évaluation
+          - entity: sensor.hamburg_wilhelmsburg_21109_020000006_gamma_odl_1h
+            name: Wilhelmsburg
+          - entity: sensor.stelle_harburg_21435_033530321_measurement_assessment
+            name: Stelle - évaluation
+          - entity: sensor.stelle_harburg_21435_033530321_gamma_odl_1h
+            name: Stelle
+
+      - type: history-graph
+        title: Historique ODL
+        hours_to_show: 24
+        entities:
+          - sensor.rosengarten_21224_033530292_gamma_odl_1h
+          - sensor.hamburg_wilhelmsburg_21109_020000006_gamma_odl_1h
+          - sensor.stelle_harburg_21435_033530321_gamma_odl_1h
+
+      - type: entities
+        title: Foudre
+        entities:
+          - entity: sensor.maison_compteur_de_foudre
+            name: Compteur
+          - entity: sensor.maison_distance_de_foudre
+            name: Distance
+          - entity: sensor.maison_azimut_de_foudre
+            name: Azimut
+
+      - type: entities
+        title: NOAA Space Weather
+        entities:
+          - entity: sensor.planetary_k_index
+            name: Kp
+          - entity: sensor.a_index
+            name: A index
+          - entity: sensor.a_index_2_day
+            name: A index J+1
+          - entity: sensor.a_index_3_day
+            name: A index J+2
+          - entity: sensor.polar_cap_absorption
+            name: Polar Cap Absorption
+          - entity: sensor.solar_flux_index
+            name: Solar Flux Index
+
+      - type: entities
+        title: NASA FIRMS - information uniquement
+        entities:
+          - entity: sensor.situation_externe_firms_53_44_9_97_75_km_hotspots
+            name: Hotspots
+          - entity: sensor.situation_externe_firms_53_44_9_97_75_km_nearest_hotspot
+            name: Hotspot le plus proche
+          - entity: sensor.situation_externe_firms_53_44_9_97_75_km_max_fire_radiative_power
+            name: FRP maximum
+          - entity: sensor.situation_externe_firms_53_44_9_97_75_km_wind_at_nearest_hotspot
+            name: Vent au hotspot
+        footer:
+          type: buttons
+          entities: []
+
+  - title: Maison
+    path: maison
+    icon: mdi:home-alert
+    type: masonry
+    cards:
+      - type: entities
+        title: Incendie chaufferie
+        state_color: true
+        entities:
+          - entity: binary_sensor.chaufferie_detection_incendie_entree_0
+            name: Chaleur
+          - entity: binary_sensor.chaufferie_detection_incendie_entree_1
+            name: Fumée
+
+      - type: entities
+        title: Réseau électrique
+        state_color: true
+        entities:
+          - entity: sensor.shellypro3em_fce8c0d97e64_phase_a_tension
+            name: L1
+          - entity: sensor.shellypro3em_fce8c0d97e64_phase_b_tension
+            name: L2
+          - entity: sensor.shellypro3em_fce8c0d97e64_phase_c_tension
+            name: L3
+          - entity: sensor.multiplus_48_2000_25_32_id_289_grid_lost_alarm
+            name: Victron - Grid lost
+          - entity: sensor.victron_over_mqtt_battery_soc
+            name: SOC batterie
+          - entity: sensor.victron_over_mqtt_battery_power_dc
+            name: Puissance batterie
+          - entity: sensor.victron_over_mqtt_battery_time_to_full_empty
+            name: Autonomie / charge
+
+      - type: history-graph
+        title: Tensions réseau - 12 h
+        hours_to_show: 12
+        entities:
+          - sensor.shellypro3em_fce8c0d97e64_phase_a_tension
+          - sensor.shellypro3em_fce8c0d97e64_phase_b_tension
+          - sensor.shellypro3em_fce8c0d97e64_phase_c_tension
+
+      - type: history-graph
+        title: Batterie - 24 h
+        hours_to_show: 24
+        entities:
+          - sensor.victron_over_mqtt_battery_soc
+          - sensor.victron_over_mqtt_battery_power_dc
+
+      - type: entities
+        title: Internet
+        state_color: true
+        entities:
+          - entity: binary_sensor.b0_19_21_50_7d_5b_port_1_internet_link
+            name: Telekom
+          - entity: binary_sensor.b0_19_21_50_7d_5b_port_2_internet_link
+            name: Vodafone
+
+      - type: entities
+        title: Moteur DEFCON
+        entities:
+          - entity: sensor.defcon_home_level
+            name: Final
+          - entity: sensor.defcon_home_external_level
+            name: Externe
+          - entity: sensor.defcon_home_infrastructure_level
+            name: Infrastructure
+          - entity: sensor.defcon_home_source_health
+            name: Santé des sources
+          - entity: select.defcon_home_manual_override
+            name: Override
+          - entity: button.defcon_home_refresh
+            name: Rafraîchir
