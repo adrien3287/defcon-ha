@@ -1,5 +1,12 @@
 # DEFCON Home for Home Assistant
 
+## 0.3.1
+
+- corrected fire input mapping: input 0 = smoke, input 1 = heat;
+- fire detection now explicitly represents the whole house;
+- refined UBA LQI corroboration logic;
+- dashboard labels corrected accordingly.
+
 DEFCON Home is a **local deterministic situation engine** for Home Assistant.
 
 Version 0.3 removes the private GitHub JSON/context feed completely. The automatic DEFCON level is calculated only from Home Assistant entities already available in the installation. No ChatGPT/AI call is required at runtime.
