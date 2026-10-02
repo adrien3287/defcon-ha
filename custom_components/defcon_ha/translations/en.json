@@ -1,59 +1,57 @@
 {
   "title": "DEFCON Home",
   "config": {
-    "step": {
-      "user": {
-        "title": "DEFCON Home sources",
-        "description": "Configure immediate Home Assistant sources and the optional private GitHub context feed.",
-        "data": {
-          "nina_entities": "NINA warning entities",
-          "dwd_entities": "DWD warning-level entities",
-          "hvv_entities": "HVV status entities",
-          "other_entities": "Other alarm/status entities",
-          "context_enabled": "Enable context feed",
-          "github_owner": "GitHub owner",
-          "github_repo": "Private feed repository",
-          "github_path": "JSON path",
-          "github_token": "GitHub read-only token"
-        },
-        "data_description": {
-          "nina_entities": "Immediate local warning slots.",
-          "dwd_entities": "Current and advance DWD warning-level sensors.",
-          "hvv_entities": "Optional HVV disruption/status entities.",
-          "other_entities": "Optional local alarm/status entities.",
-          "context_enabled": "Poll the private contextual DEFCON JSON and merge it with local alerts.",
-          "github_owner": "Repository owner. Default: adrien3287.",
-          "github_repo": "Private repository containing the feed. Default: defcon-json.",
-          "github_path": "Path to the current feed. Default: status/current.json.",
-          "github_token": "Fine-grained GitHub token with Contents: Read only on the private feed repository."
-        }
+    "step": {"user": {
+      "title": "DEFCON Home sources",
+      "description": "Configure deterministic Home Assistant sources. No GitHub JSON or AI is used.",
+      "data": {
+        "nina_entities": "NINA warning entities",
+        "dwd_current_entities": "DWD current warning-level entities",
+        "dwd_advance_entities": "DWD advance warning-level entities",
+        "flood_entities": "Flood warning-level entities",
+        "pegel_stage_entities": "PEGELONLINE stage entities",
+        "uba_lqi_entities": "UBA numeric LQI entities",
+        "bfs_assessment_entities": "BfS ODL assessment entities",
+        "lightning_count_entities": "Blitzortung count entities",
+        "lightning_distance_entities": "Blitzortung distance entities",
+        "noaa_entities": "NOAA space-weather entities",
+        "fire_heat_entities": "Local heat/fire entities",
+        "fire_smoke_entities": "Local smoke entities",
+        "grid_voltage_entities": "Grid phase-voltage entities",
+        "grid_alarm_entities": "Grid-loss alarm entities",
+        "battery_soc_entities": "Battery SOC entities",
+        "wan_telekom_entities": "Telekom WAN link entities",
+        "wan_vodafone_entities": "Vodafone WAN link entities",
+        "other_entities": "Other alarm/status entities"
       }
-    },
+    }},
     "abort": {
       "single_instance_allowed": "Only one DEFCON Home instance can be configured.",
       "already_configured": "DEFCON Home is already configured."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "DEFCON Home options",
-        "description": "Changes are applied immediately. The GitHub token stays in Home Assistant config storage and is never exposed as a sensor attribute.",
-        "data": {
-          "nina_entities": "NINA warning entities",
-          "dwd_entities": "DWD warning-level entities",
-          "hvv_entities": "HVV status entities",
-          "other_entities": "Other alarm/status entities",
-          "context_enabled": "Enable context feed",
-          "github_owner": "GitHub owner",
-          "github_repo": "Private feed repository",
-          "github_path": "JSON path",
-          "github_token": "GitHub read-only token"
-        },
-        "data_description": {
-          "github_token": "Use a dedicated fine-grained token restricted to Contents: Read on defcon-json."
-        }
-      }
+  "options": {"step": {"init": {
+    "title": "DEFCON Home options",
+    "description": "Changes are applied to the local deterministic engine.",
+    "data": {
+      "nina_entities": "NINA warning entities",
+      "dwd_current_entities": "DWD current warning-level entities",
+      "dwd_advance_entities": "DWD advance warning-level entities",
+      "flood_entities": "Flood warning-level entities",
+      "pegel_stage_entities": "PEGELONLINE stage entities",
+      "uba_lqi_entities": "UBA numeric LQI entities",
+      "bfs_assessment_entities": "BfS ODL assessment entities",
+      "lightning_count_entities": "Blitzortung count entities",
+      "lightning_distance_entities": "Blitzortung distance entities",
+      "noaa_entities": "NOAA space-weather entities",
+      "fire_heat_entities": "Local heat/fire entities",
+      "fire_smoke_entities": "Local smoke entities",
+      "grid_voltage_entities": "Grid phase-voltage entities",
+      "grid_alarm_entities": "Grid-loss alarm entities",
+      "battery_soc_entities": "Battery SOC entities",
+      "wan_telekom_entities": "Telekom WAN link entities",
+      "wan_vodafone_entities": "Vodafone WAN link entities",
+      "other_entities": "Other alarm/status entities"
     }
-  }
+  }}}
 }
