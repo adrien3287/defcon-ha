@@ -279,3 +279,51 @@ views:
             name: Override
           - entity: button.defcon_home_refresh
             name: Rafraîchir
+
+
+  - title: Contexte
+    path: contexte
+    icon: mdi:newspaper-variant-multiple
+    type: masonry
+    cards:
+      - type: entities
+        title: Informations analysées par Gemini
+        state_color: true
+        entities:
+          - entity: sensor.lagezentrum_news_context
+            name: Statut
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: importance
+            name: Importance
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: category
+            name: Catégorie
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: scope
+            name: Portée
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: title
+            name: Titre
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: summary_fr
+            name: Résumé
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: reason
+            name: Pertinence
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: analyzed_at
+            name: Analysé à
+
+      - type: markdown
+        title: Principe
+        content: >-
+          Le contexte RSS est analysé par Gemini pour filtrer et résumer les
+          informations pertinentes. Cette couche est informative et ne modifie
+          pas directement le niveau DEFCON.
