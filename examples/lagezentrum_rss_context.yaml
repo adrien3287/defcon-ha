@@ -1,0 +1,145 @@
+# Lagezentrum RSS context layer for Home Assistant.
+#
+# Prerequisite:
+#   AI Task entity: ai_task.google_ai_task
+#
+# Add these four Feedreader integrations in Home Assistant:
+#   https://www.ndr.de/nachrichten/hamburg/index~rss2.xml
+#   https://www.presseportal.de/rss/dienststelle_6337.rss2
+#   https://www.presseportal.de/rss/dienststelle_82522.rss2
+#   https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml
+#
+# This template sensor is informational only. It does NOT modify DEFCON.
+# It keeps the last RSS item that Gemini classified as relevant.
+
+template:
+  - triggers:
+      - trigger: event
+        event_type: feedreader
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.event.data.feed_url | default('') in [
+            'https://www.ndr.de/nachrichten/hamburg/index~rss2.xml',
+            'https://www.presseportal.de/rss/dienststelle_6337.rss2',
+            'https://www.presseportal.de/rss/dienststelle_82522.rss2',
+            'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml'
+          ] }}
+
+    actions:
+      - action: ai_task.generate_data
+        data:
+          entity_id: ai_task.google_ai_task
+          task_name: "Lagezentrum RSS context"
+          instructions: >-
+            Tu analyses une information pour un centre de situation domestique
+            situé à Hamburg-Marmstorf.
+
+            Titre:
+            {{ trigger.event.data.title | default('') }}
+
+            Description:
+            {{ trigger.event.data.description | default('') }}
+
+            Contenu:
+            {{ trigger.event.data.content | default('') }}
+
+            Source:
+            {{ trigger.event.data.feed_url | default('') }}
+
+            Classe l'information uniquement selon son intérêt pratique à court
+            terme pour une famille et une habitation à Hamburg-Marmstorf.
+
+            Domaines pertinents:
+            - sécurité publique
+            - incendie ou accident majeur
+            - infrastructure critique
+            - électricité
+            - eau potable
+            - télécommunications
+            - transport
+            - météo sévère
+            - pollution
+            - approvisionnement
+            - événement régional/national/européen avec impact concret possible
+              à court terme à Hambourg
+
+            Importance:
+            0 = sans intérêt pratique
+            1 = information utile mais sans action
+            2 = situation à surveiller
+            3 = événement important nécessitant attention
+
+            Sois conservateur. Un fait divers ordinaire, une disparition sans
+            impact collectif, un simple retard isolé, le sport, la culture,
+            la politique sans conséquence opérationnelle immédiate ou une
+            information générale doivent rester non pertinents ou à importance 0.
+
+            Ne déduis pas de faits absents de l'article.
+            Résume en français, factuellement, en maximum deux phrases.
+        structure:
+          relevant:
+            description: "Pertinent pour le Lagezentrum"
+            required: true
+            selector:
+              boolean: {}
+          importance:
+            description: "Importance opérationnelle de 0 à 3"
+            required: true
+            selector:
+              number:
+                min: 0
+                max: 3
+          category:
+            description: >-
+              security, fire, infrastructure, electricity, water, telecom,
+              transport, weather, pollution, supply ou other
+            required: true
+            selector:
+              text: {}
+          scope:
+            description: "local, hamburg, germany, europe ou world"
+            required: true
+            selector:
+              text: {}
+          summary_fr:
+            description: "Résumé factuel en français, maximum deux phrases"
+            required: true
+            selector:
+              text: {}
+          reason:
+            description: "Pourquoi l'information est ou non pertinente"
+            required: true
+            selector:
+              text: {}
+        response_variable: rss_result
+
+      - condition: template
+        value_template: >-
+          {{ rss_result.data.relevant | default(false) | bool
+             and (rss_result.data.importance | default(0) | int) >= 1 }}
+
+    sensor:
+      - name: "Lagezentrum News Context"
+        unique_id: lagezentrum_news_context
+        icon: mdi:newspaper-variant-multiple
+        state: >-
+          {% set importance = rss_result.data.importance | int(0) %}
+          {% if importance >= 3 %}
+            important
+          {% elif importance == 2 %}
+            watch
+          {% else %}
+            information
+          {% endif %}
+        attributes:
+          importance: "{{ rss_result.data.importance | int(0) }}"
+          category: "{{ rss_result.data.category | default('other') }}"
+          scope: "{{ rss_result.data.scope | default('hamburg') }}"
+          summary_fr: "{{ rss_result.data.summary_fr | default('') }}"
+          reason: "{{ rss_result.data.reason | default('') }}"
+          title: "{{ trigger.event.data.title | default('') }}"
+          link: "{{ trigger.event.data.link | default('') }}"
+          feed_url: "{{ trigger.event.data.feed_url | default('') }}"
+          analyzed_at: "{{ now().isoformat() }}"
