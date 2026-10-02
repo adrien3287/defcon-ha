@@ -85,14 +85,15 @@ Raw centimetre values are not used as universal thresholds.
 
 ### UBA LQI
 
-Air quality is deliberately weighted conservatively and requires corroboration:
+Air quality is deliberately weighted conservatively and requires corroboration across the configured nearby stations:
 
 - LQI 0-2 -> normal
 - one isolated LQI 3 -> no DEFCON change
-- at least two monitored stations at LQI 3+ -> DEFCON 4
-- at least one monitored station at LQI 4+ -> DEFCON 4
+- at least two configured stations at LQI 3+ -> DEFCON 4
+- at least one configured station at LQI 4+ -> DEFCON 4
+- at least three configured nearby stations at LQI 4+ -> DEFCON 3
 
-Ambient air quality alone never drives DEFCON 1, 2 or 3.
+Ambient air quality alone never drives DEFCON 1 or 2. "Nearby" means the UBA stations selected in the integration options.
 
 ### BfS ODL
 
