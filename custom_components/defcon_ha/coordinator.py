@@ -514,9 +514,11 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             lqi = int(float(state.state))
         except (TypeError, ValueError):
             return None
-        if lqi <= 1:
+        # UBA LQI 0-2 (very good / good / moderate) remains normal for
+        # household DEFCON. Only poor or very poor air quality escalates.
+        if lqi <= 2:
             return None
-        level = 4 if lqi == 2 else 3 if lqi == 3 else 2 if lqi == 4 else 1
+        level = 4 if lqi == 3 else 3
         return DefconReason(
             source="UBA LQI",
             category="air_quality",
