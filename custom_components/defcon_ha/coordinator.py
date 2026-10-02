@@ -510,11 +510,16 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         )
 
     def _analyse_uba_group(self, states: list[State]) -> DefconReason | None:
-        """Evaluate UBA LQI as a corroborated regional signal.
+        """Evaluate UBA LQI as a corroborated nearby/regional signal.
 
-        One isolated LQI 3 is ignored. DEFCON 4 requires either:
-        - at least one monitored station at LQI 4 or above, or
-        - at least two monitored stations at LQI 3 or above.
+        Policy for the configured nearby stations:
+        - isolated LQI 3: no DEFCON change
+        - >= 2 stations at LQI 3: DEFCON 4
+        - >= 1 station at LQI 4: DEFCON 4
+        - >= 3 stations at LQI 4: DEFCON 3
+
+        "Nearby" deliberately means the UBA entities selected in the integration
+        options; raw distance thresholds are not guessed inside this engine.
         """
         readings: list[tuple[State, int]] = []
         for state in states:
@@ -523,13 +528,24 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             except (TypeError, ValueError):
                 continue
 
-        high = [(state, lqi) for state, lqi in readings if lqi >= 4]
-        elevated = [(state, lqi) for state, lqi in readings if lqi >= 3]
+        lqi4 = [(state, lqi) for state, lqi in readings if lqi >= 4]
+        lqi3 = [(state, lqi) for state, lqi in readings if lqi >= 3]
 
-        if not high and len(elevated) < 2:
+        if len(lqi4) >= 3:
+            triggering = lqi4
+            level = 3
+            severity = "three_nearby_lqi4"
+        elif lqi4:
+            triggering = lqi4
+            level = 4
+            severity = "lqi4"
+        elif len(lqi3) >= 2:
+            triggering = lqi3
+            level = 4
+            severity = "two_lqi3"
+        else:
             return None
 
-        triggering = high if high else elevated
         detail = "; ".join(
             f"{state.name or state.entity_id}: LQI {lqi}"
             for state, lqi in triggering
@@ -540,8 +556,8 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             entity_id=",".join(state.entity_id for state, _ in triggering),
             title="Dégradation régionale de la qualité de l'air",
             detail=detail,
-            level=4,
-            severity="corroborated",
+            level=level,
+            severity=severity,
         )
 
     def _analyse_bfs(self, state: State) -> DefconReason | None:
