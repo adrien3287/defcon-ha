@@ -143,7 +143,7 @@ def _schema(values: dict[str, Any] | None = None) -> vol.Schema:
 class DefconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for DEFCON Home."""
 
-    VERSION = 2
+    VERSION = 3
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
