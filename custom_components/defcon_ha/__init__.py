@@ -16,6 +16,8 @@ from .const import (
     CONF_DWD_ADVANCE_ENTITIES,
     CONF_DWD_CURRENT_ENTITIES,
     CONF_DWD_ENTITIES,
+    CONF_FIRE_HEAT_ENTITIES,
+    CONF_FIRE_SMOKE_ENTITIES,
     DOMAIN,
     PLATFORMS,
 )
@@ -61,33 +63,55 @@ async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate v0.2 config entries away from the GitHub context feed."""
-    if entry.version >= 2:
+    """Migrate legacy DEFCON Home config entries."""
+    if entry.version >= 3:
         return True
 
     data = dict(entry.data)
-    legacy_dwd = data.pop(CONF_DWD_ENTITIES, [])
-    if isinstance(legacy_dwd, (list, tuple)):
-        data.setdefault(
-            CONF_DWD_CURRENT_ENTITIES,
-            [e for e in legacy_dwd if "antici" not in e.lower() and "advance" not in e.lower()],
-        )
-        data.setdefault(
-            CONF_DWD_ADVANCE_ENTITIES,
-            [e for e in legacy_dwd if "antici" in e.lower() or "advance" in e.lower()],
-        )
+    options = dict(entry.options)
 
-    for legacy_key in (
-        "context_enabled",
-        "github_owner",
-        "github_repo",
-        "github_path",
-        "github_token",
-        "hvv_entities",
-    ):
-        data.pop(legacy_key, None)
+    if entry.version < 2:
+        legacy_dwd = data.pop(CONF_DWD_ENTITIES, [])
+        if isinstance(legacy_dwd, (list, tuple)):
+            data.setdefault(
+                CONF_DWD_CURRENT_ENTITIES,
+                [e for e in legacy_dwd if "antici" not in e.lower() and "advance" not in e.lower()],
+            )
+            data.setdefault(
+                CONF_DWD_ADVANCE_ENTITIES,
+                [e for e in legacy_dwd if "antici" in e.lower() or "advance" in e.lower()],
+            )
 
-    hass.config_entries.async_update_entry(entry, data=data, version=2)
+        for legacy_key in (
+            "context_enabled",
+            "github_owner",
+            "github_repo",
+            "github_path",
+            "github_token",
+            "hvv_entities",
+        ):
+            data.pop(legacy_key, None)
+
+    if entry.version < 3:
+        old_heat = ["binary_sensor.chaufferie_detection_incendie_entree_0"]
+        old_smoke = ["binary_sensor.chaufferie_detection_incendie_entree_1"]
+        new_heat = ["binary_sensor.chaufferie_detection_incendie_entree_1"]
+        new_smoke = ["binary_sensor.chaufferie_detection_incendie_entree_0"]
+
+        for container in (data, options):
+            if (
+                container.get(CONF_FIRE_HEAT_ENTITIES) == old_heat
+                and container.get(CONF_FIRE_SMOKE_ENTITIES) == old_smoke
+            ):
+                container[CONF_FIRE_HEAT_ENTITIES] = new_heat
+                container[CONF_FIRE_SMOKE_ENTITIES] = new_smoke
+
+    hass.config_entries.async_update_entry(
+        entry,
+        data=data,
+        options=options,
+        version=3,
+    )
     return True
 
 
