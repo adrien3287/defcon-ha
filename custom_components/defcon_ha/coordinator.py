@@ -275,14 +275,14 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             if reason:
                 external.append(reason)
 
-        for state in self._states(
+        uba_states = self._states(
             self._configured(CONF_UBA_LQI_ENTITIES, DEFAULT_UBA_LQI_ENTITIES),
             "UBA LQI",
             degraded,
-        ):
-            reason = self._analyse_uba(state)
-            if reason:
-                external.append(reason)
+        )
+        uba_reason = self._analyse_uba_group(uba_states)
+        if uba_reason:
+            external.append(uba_reason)
 
         for state in self._states(
             self._configured(CONF_BFS_ASSESSMENT_ENTITIES, DEFAULT_BFS_ASSESSMENT_ENTITIES),
@@ -509,24 +509,39 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
             severity=str(raw),
         )
 
-    def _analyse_uba(self, state: State) -> DefconReason | None:
-        try:
-            lqi = int(float(state.state))
-        except (TypeError, ValueError):
+    def _analyse_uba_group(self, states: list[State]) -> DefconReason | None:
+        """Evaluate UBA LQI as a corroborated regional signal.
+
+        One isolated LQI 3 is ignored. DEFCON 4 requires either:
+        - at least one monitored station at LQI 4 or above, or
+        - at least two monitored stations at LQI 3 or above.
+        """
+        readings: list[tuple[State, int]] = []
+        for state in states:
+            try:
+                readings.append((state, int(float(state.state))))
+            except (TypeError, ValueError):
+                continue
+
+        high = [(state, lqi) for state, lqi in readings if lqi >= 4]
+        elevated = [(state, lqi) for state, lqi in readings if lqi >= 3]
+
+        if not high and len(elevated) < 2:
             return None
-        # UBA LQI 0-2 (very good / good / moderate) remains normal for
-        # household DEFCON. Only poor or very poor air quality escalates.
-        if lqi <= 2:
-            return None
-        level = 4 if lqi == 3 else 3
+
+        triggering = high if high else elevated
+        detail = "; ".join(
+            f"{state.name or state.entity_id}: LQI {lqi}"
+            for state, lqi in triggering
+        )
         return DefconReason(
             source="UBA LQI",
             category="air_quality",
-            entity_id=state.entity_id,
-            title=state.name or "Air quality",
-            detail=f"LQI {lqi}",
-            level=level,
-            severity=str(lqi),
+            entity_id=",".join(state.entity_id for state, _ in triggering),
+            title="Dégradation régionale de la qualité de l'air",
+            detail=detail,
+            level=4,
+            severity="corroborated",
         )
 
     def _analyse_bfs(self, state: State) -> DefconReason | None:
