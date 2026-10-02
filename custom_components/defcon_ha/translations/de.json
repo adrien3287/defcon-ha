@@ -1,59 +1,57 @@
 {
   "title": "DEFCON Home",
   "config": {
-    "step": {
-      "user": {
-        "title": "DEFCON-Home-Quellen",
-        "description": "Konfiguriere sofortige Home-Assistant-Quellen und den privaten GitHub-Kontextfeed.",
-        "data": {
-          "nina_entities": "NINA-Warnungen",
-          "dwd_entities": "DWD-Warnstufen",
-          "hvv_entities": "HVV-Status",
-          "other_entities": "Weitere Alarm-/Statusentitäten",
-          "context_enabled": "Kontextfeed aktivieren",
-          "github_owner": "GitHub-Inhaber",
-          "github_repo": "Privates Feed-Repository",
-          "github_path": "JSON-Pfad",
-          "github_token": "GitHub-Token nur zum Lesen"
-        },
-        "data_description": {
-          "nina_entities": "Sofortige lokale Warnslots.",
-          "dwd_entities": "Aktuelle und Vorab-DWD-Warnstufen.",
-          "hvv_entities": "Optionale HVV-Störungs-/Statusentitäten.",
-          "other_entities": "Optionale lokale Alarm-/Statusentitäten.",
-          "context_enabled": "Liest den privaten DEFCON-Kontextfeed und kombiniert ihn mit lokalen Warnungen.",
-          "github_owner": "Repository-Inhaber. Standard: adrien3287.",
-          "github_repo": "Privates Feed-Repository. Standard: defcon-json.",
-          "github_path": "Pfad zum aktuellen Feed. Standard: status/current.json.",
-          "github_token": "Fine-grained GitHub-Token mit ausschließlich Contents: Read für defcon-json."
-        }
+    "step": {"user": {
+      "title": "DEFCON Home Quellen",
+      "description": "Lokale deterministische Home-Assistant-Quellen konfigurieren. Kein GitHub-JSON und keine KI.",
+      "data": {
+        "nina_entities": "NINA Warnentitäten",
+        "dwd_current_entities": "DWD aktuelle Warnstufe",
+        "dwd_advance_entities": "DWD Vorabwarnstufe",
+        "flood_entities": "Hochwasser-Warnstufen",
+        "pegel_stage_entities": "PEGELONLINE Stufen",
+        "uba_lqi_entities": "UBA LQI numerisch",
+        "bfs_assessment_entities": "BfS ODL Bewertungen",
+        "lightning_count_entities": "Blitzortung Zähler",
+        "lightning_distance_entities": "Blitzortung Entfernung",
+        "noaa_entities": "NOAA Weltraumwetter",
+        "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
+        "fire_smoke_entities": "Lokale Raucherkennung",
+        "grid_voltage_entities": "Netzspannungen L1/L2/L3",
+        "grid_alarm_entities": "Netzausfall-Alarme",
+        "battery_soc_entities": "Batterie-SOC",
+        "wan_telekom_entities": "Telekom WAN",
+        "wan_vodafone_entities": "Vodafone WAN",
+        "other_entities": "Weitere Alarm-/Statusentitäten"
       }
-    },
+    }},
     "abort": {
-      "single_instance_allowed": "Es kann nur eine DEFCON-Home-Instanz konfiguriert werden.",
+      "single_instance_allowed": "Es kann nur eine DEFCON Home Instanz konfiguriert werden.",
       "already_configured": "DEFCON Home ist bereits konfiguriert."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "DEFCON-Home-Optionen",
-        "description": "Änderungen werden sofort angewendet. Das Token bleibt im Home-Assistant-Konfigurationsspeicher und wird nie als Entitätsattribut angezeigt.",
-        "data": {
-          "nina_entities": "NINA-Warnungen",
-          "dwd_entities": "DWD-Warnstufen",
-          "hvv_entities": "HVV-Status",
-          "other_entities": "Weitere Alarm-/Statusentitäten",
-          "context_enabled": "Kontextfeed aktivieren",
-          "github_owner": "GitHub-Inhaber",
-          "github_repo": "Privates Feed-Repository",
-          "github_path": "JSON-Pfad",
-          "github_token": "GitHub-Token nur zum Lesen"
-        },
-        "data_description": {
-          "github_token": "Dediziertes Fine-grained-Token nur mit Contents: Read für defcon-json verwenden."
-        }
-      }
+  "options": {"step": {"init": {
+    "title": "DEFCON Home Optionen",
+    "description": "Änderungen werden auf die lokale deterministische Engine angewendet.",
+    "data": {
+      "nina_entities": "NINA Warnentitäten",
+      "dwd_current_entities": "DWD aktuelle Warnstufe",
+      "dwd_advance_entities": "DWD Vorabwarnstufe",
+      "flood_entities": "Hochwasser-Warnstufen",
+      "pegel_stage_entities": "PEGELONLINE Stufen",
+      "uba_lqi_entities": "UBA LQI numerisch",
+      "bfs_assessment_entities": "BfS ODL Bewertungen",
+      "lightning_count_entities": "Blitzortung Zähler",
+      "lightning_distance_entities": "Blitzortung Entfernung",
+      "noaa_entities": "NOAA Weltraumwetter",
+      "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
+      "fire_smoke_entities": "Lokale Raucherkennung",
+      "grid_voltage_entities": "Netzspannungen L1/L2/L3",
+      "grid_alarm_entities": "Netzausfall-Alarme",
+      "battery_soc_entities": "Batterie-SOC",
+      "wan_telekom_entities": "Telekom WAN",
+      "wan_vodafone_entities": "Vodafone WAN",
+      "other_entities": "Weitere Alarm-/Statusentitäten"
     }
-  }
+  }}}
 }
