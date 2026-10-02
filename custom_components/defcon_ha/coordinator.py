@@ -677,17 +677,17 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         if not heat and not smoke:
             return None
         if heat and smoke:
-            title, level, severity = "Chaleur et fumée détectées dans la chaufferie", 1, "heat+smoke"
+            title, level, severity = "Chaleur et fumée détectées dans la maison", 1, "heat+smoke"
         elif smoke:
-            title, level, severity = "Fumée détectée dans la chaufferie", 2, "smoke"
+            title, level, severity = "Fumée détectée dans la maison", 2, "smoke"
         else:
-            title, level, severity = "Chaleur anormale détectée dans la chaufferie", 2, "heat"
+            title, level, severity = "Chaleur anormale détectée dans la maison", 2, "heat"
         return DefconReason(
             source="Incendie maison",
             category="fire",
             entity_id=",".join(s.entity_id for s in heat_states + smoke_states),
             title=title,
-            detail="Détection locale Home Assistant.",
+            detail="Détection incendie locale Home Assistant.",
             level=level,
             severity=severity,
         )
