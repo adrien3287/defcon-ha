@@ -1,147 +1,145 @@
 # DEFCON Home for Home Assistant
 
-DEFCON Home combines **immediate local Home Assistant alerts** with a **private contextual situation feed** to produce one household DEFCON level from 5 (normal) to 1 (immediate danger).
+DEFCON Home is a **local deterministic situation engine** for Home Assistant.
+
+Version 0.3 removes the private GitHub JSON/context feed completely. The automatic DEFCON level is calculated only from Home Assistant entities already available in the installation. No ChatGPT/AI call is required at runtime.
 
 ## Architecture
 
-```text
-Immediate / local                         Context / hourly analysis
-Home Assistant                           private GitHub repo
-                                              adrien3287/defcon-json
-NINA warning slots ─┐                         status/current.json
-DWD warning levels ─┤                               │
-HVV status ─────────┼─> Local DEFCON                  │ HTTPS + read-only token
-Other HA alarms ────┘       │                         ▼
-                            └──────────────┐   Context DEFCON
-                                           ▼         │
-                                      Aggregator <───┘
-                                           │
-                                  final = most severe
-                                           │
-                                  Manual override
-                                           │
-                                  DEFCON Home card
-```
+Home Assistant entities are grouped into two domains:
 
-The contextual feed can **escalate** the result but can never hide a more severe local NINA/DWD/HVV/HA alert.
+- **External situation**: NINA, DWD current + advance, flood warning levels, PEGELONLINE, UBA LQI, BfS ODL assessments, Blitzortung and NOAA Space Weather.
+- **House infrastructure**: boiler-room heat/smoke detection, three-phase grid voltage, Victron grid-loss alarm, battery SOC and the two Internet WAN links.
 
-If the context feed is stale, unavailable or invalid, it is automatically excluded from the automatic level. Local monitoring continues normally.
+NASA FIRMS remains useful for the situation map but is **explicitly excluded from the DEFCON calculation**.
 
-## v0.2.0
+## Levels
 
-- Immediate local evaluation of NINA, DWD, HVV and optional HA entities.
-- Private GitHub JSON feed polled every 5 minutes.
-- Feed freshness enforced with `valid_until`.
-- Three sensors:
-  - `Level` — final effective DEFCON.
-  - `Local level` — only immediate HA sources.
-  - `Context level` — hourly contextual analysis.
-- Persistent manual override.
-- Refresh button.
-- Lovelace card showing Local / Context / Automatic / Final.
-- Options UI to change source entities and GitHub credentials without recreating the integration.
-- GitHub token is never exposed in entity attributes.
+| DEFCON | Meaning |
+| ---: | --- |
+| 5 | Normal |
+| 4 | Watch |
+| 3 | Alert |
+| 2 | Severe |
+| 1 | Critical |
 
-## Default Hamburg entities
+The final level is the most severe active deterministic rule, unless a manual override is selected.
 
-New installations prefill:
+## Default Hamburg/Marmstorf sources
 
-```text
-sensor.hamburg_harburg_niveau_d_alerte_actuel
-sensor.hamburg_harburg_niveau_d_alerte_anticipee
+### Official / external
 
-binary_sensor.hamburg_freie_und_hansestadt_warning_1
-binary_sensor.hamburg_freie_und_hansestadt_warning_2
-binary_sensor.hamburg_freie_und_hansestadt_warning_3
-binary_sensor.hamburg_freie_und_hansestadt_warning_4
-binary_sensor.hamburg_freie_und_hansestadt_warning_5
-```
+- NINA: five Hamburg warning slots.
+- DWD current: `sensor.hamburg_harburg_niveau_d_alerte_actuel`
+- DWD advance: `sensor.hamburg_harburg_niveau_d_alerte_anticipee`
+- PEGELONLINE: `sensor.hamburg_st_pauli_elbe_stage`
+- UBA LQI: Neugraben, Wilhelmsburg and Veddel numeric LQI sensors.
+- BfS ODL assessment: Rosengarten, Hamburg-Wilhelmsburg and Stelle/Harburg.
+- Blitzortung: local lightning count and nearest-distance sensors.
+- NOAA: planetary K index, A index and polar-cap absorption.
 
-Existing installations can set these under **Settings → Devices & services → DEFCON Home → Configure**.
+Flood-warning entities are configurable but intentionally have no hard-coded default until an authoritative flood-warning entity is selected.
 
-## Private context feed
+### House infrastructure
 
-Default repository configuration:
+- Heat: `binary_sensor.chaufferie_detection_incendie_entree_0`
+- Smoke: `binary_sensor.chaufferie_detection_incendie_entree_1`
+- Grid voltage: Shelly Pro 3EM L1/L2/L3 voltage sensors.
+- Victron: MultiPlus grid-lost alarm.
+- Battery: Victron battery SOC.
+- WAN 1: Telekom.
+- WAN 2: Vodafone.
+- UPS: intentionally not used.
+- Water pressure: not used until local monitoring exists.
 
-```text
-owner: adrien3287
-repository: defcon-json
-path: status/current.json
-```
+## Main rules
 
-Because the repository is private, create a dedicated GitHub fine-grained personal access token with:
+### NINA
 
-- Repository access: only `defcon-json`
-- Repository permission: **Contents: Read**
-- No write/admin permission
+- Minor -> DEFCON 4
+- Moderate -> DEFCON 3
+- Severe -> DEFCON 2
+- Extreme -> DEFCON 1
 
-Enter the token in the DEFCON Home options screen. It is sent as an HTTP `Authorization: Bearer` header, never in the URL.
+### DWD
 
-### Expected JSON
+Current warning:
+- levels 1-2 -> DEFCON 4
+- level 3 -> DEFCON 3
+- level 4+ -> DEFCON 2
 
-```json
-{
-  "schema_version": 1,
-  "generated_at": "2026-09-29T22:23:00+02:00",
-  "valid_until": "2026-09-29T23:53:00+02:00",
-  "context_defcon": 4,
-  "confidence": "medium",
-  "summary": "Short situation summary",
-  "areas": {
-    "marmstorf_harburg": {"level": 5, "summary": "..."},
-    "hamburg": {"level": 4, "summary": "..."},
-    "germany": {"level": 4, "summary": "..."},
-    "europe": {"level": 4, "summary": "..."}
-  },
-  "reasons": [],
-  "weak_signals": [],
-  "checks": {},
-  "source_count": 8
-}
-```
+Advance warning:
+- levels 1-3 -> DEFCON 4
+- level 4+ -> DEFCON 3
 
-Only a feed with a valid DEFCON level and a future `valid_until` influences the automatic result.
+### Hydrology
 
-## Decision rule
+For configured official/stage sensors:
+- 0 -> normal
+- 1 -> DEFCON 4
+- 2 -> DEFCON 3
+- 3 -> DEFCON 2
+- 4+ -> DEFCON 1
 
-```text
-automatic DEFCON = min(local DEFCON, fresh context DEFCON)
-final DEFCON     = manual override if enabled, otherwise automatic DEFCON
-```
+Raw centimetre values are not used as universal thresholds.
 
-Example:
+### UBA LQI
 
-```text
-Local   = 5
-Context = 4
-Final   = 4
+- 0-1 -> normal
+- 2 -> DEFCON 4
+- 3 -> DEFCON 3
+- 4 -> DEFCON 2
+- 5+ -> DEFCON 1
 
-Local   = 3
-Context = 5
-Final   = 3
+### BfS ODL
 
-Local   = 3
-Context = stale
-Final   = 3
-```
+The integration uses the BfS **measurement assessment** entity, not a single fixed µSv/h threshold. `within_natural_range` is normal; abnormal assessments create an alert.
 
-## Local default policy
+### Blitzortung
 
-| Source | Condition | Level |
-| --- | --- | ---: |
-| none | no active local reason | 5 |
-| NINA Minor | selected official warning | 4 |
-| NINA active | normal active official warning | 3 |
-| NINA Extreme / Severe+Immediate | high-severity official warning | 2 |
-| DWD current level 1-2 | weather watch | 4 |
-| DWD current level 3 | serious weather | 3 |
-| DWD current level 4+ | very severe weather | 2 |
-| DWD advance level 1-3 | advance weather watch | 4 |
-| DWD advance level 4+ | severe advance warning | 3 |
-| HVV selected disruption | disruption/cancellation/closure/15+ min delay | 4 |
-| Other selected HA problem | active alarm/problem | 4 |
+When lightning is detected:
+- nearest strike <= 5 km -> DEFCON 3
+- nearest strike <= 15 km -> DEFCON 4
 
-## Card
+### NOAA Space Weather
+
+- Kp >= 5 -> DEFCON 4
+- Kp >= 7 -> DEFCON 3
+- Kp >= 8 -> DEFCON 2
+
+### Fire
+
+- heat OR smoke -> DEFCON 2
+- heat AND smoke -> DEFCON 1
+
+### Electrical grid
+
+- one abnormal phase -> DEFCON 4
+- multi-phase fault or Victron grid-loss alarm -> DEFCON 3
+- during a significant grid fault: battery SOC < 35% -> DEFCON 2
+- during a significant grid fault: battery SOC < 20% -> DEFCON 1
+
+Unavailable source entities are reported separately as degraded monitoring and are not silently interpreted as normal.
+
+### Internet
+
+- one WAN down -> DEFCON 4
+- Telekom + Vodafone down -> DEFCON 3
+- both WAN down together with a significant grid fault -> DEFCON 2
+
+## Entities created
+
+- `sensor.defcon_home_level`
+- `sensor.defcon_home_local_level`
+- `sensor.defcon_home_external_level`
+- `sensor.defcon_home_infrastructure_level`
+- `sensor.defcon_home_source_health`
+- manual override select
+- refresh button
+
+`Local level` is retained for compatibility and now represents the combined deterministic HA level before manual override.
+
+## Lovelace card
 
 ```yaml
 type: custom:defcon-ha-card
@@ -150,9 +148,9 @@ title: DEFCON Maison
 show_sources: true
 ```
 
-The card is served and loaded automatically by the integration.
+The card shows External / Infrastructure / Automatic levels, active reasons and degraded sources.
 
-## Events
+## Event
 
 Every effective level change fires:
 
@@ -160,26 +158,15 @@ Every effective level change fires:
 defcon_ha_level_changed
 ```
 
-with:
+with the old/new level, external level, infrastructure level, summary and active reasons.
 
-```yaml
-old_level: 5
-new_level: 4
-automatic_level: 4
-local_level: 5
-context_level: 4
-context_status: fresh
-summary: ...
-reasons: [...]
-```
+## Resilience
 
-## Privacy and resilience
-
-- The contextual repository is private.
-- The feed contains no exact home address, Home Assistant entity IDs, tokens or secrets.
-- The Home Assistant GitHub token is read-only and limited to one repository.
-- A GitHub/Internet/ChatGPT outage cannot suppress an immediate local warning.
-- An expired contextual report is never interpreted as proof that the situation is normal.
+- No runtime GitHub dependency.
+- No runtime AI dependency.
+- Internet loss does not stop local fire/grid/battery evaluation.
+- Missing/unavailable source entities are visible through Source health.
+- Manual override remains available.
 
 ## License
 
