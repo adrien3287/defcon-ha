@@ -207,10 +207,6 @@ views:
             name: FRP maximum
           - entity: sensor.situation_externe_firms_53_44_9_97_75_km_wind_at_nearest_hotspot
             name: Vent au hotspot
-        footer:
-          type: buttons
-          entities: []
-
   - title: Maison
     path: maison
     icon: mdi:home-alert
