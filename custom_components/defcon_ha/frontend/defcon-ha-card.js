@@ -24,12 +24,12 @@ class DefconHaCard extends HTMLElement {
     const count = Array.isArray(state?.attributes?.reasons)
       ? state.attributes.reasons.length
       : 0;
-    return Math.max(3, Math.min(8, 3 + count));
+    return Math.max(3, Math.min(9, 3 + count));
   }
 
   static getStubConfig(hass) {
     const entity = Object.keys(hass?.states || {}).find(
-      (id) => id.startsWith("sensor.") && hass.states[id]?.attributes?.automatic_level !== undefined
+      (id) => id.startsWith("sensor.") && hass.states[id]?.attributes?.engine === "local_deterministic"
     );
     return { entity: entity || "sensor.defcon_home_level" };
   }
@@ -44,30 +44,39 @@ class DefconHaCard extends HTMLElement {
   _labels() {
     const labels = {
       en: {
-        normal: "Normal",
         automatic: "Automatic",
+        external: "External",
+        infrastructure: "Infrastructure",
         manual: "Manual override",
-        reasons: "Why",
-        noReasons: "No active warning or monitored disruption",
+        reasons: "Active reasons",
+        noReasons: "No active alert among configured sources",
         sources: "Sources",
+        health: "Source health",
+        degraded: "degraded",
         updated: "Evaluated",
       },
       fr: {
-        normal: "Normal",
         automatic: "Automatique",
+        external: "Externe",
+        infrastructure: "Infrastructure",
         manual: "Override manuel",
-        reasons: "Pourquoi",
-        noReasons: "Aucune alerte ou perturbation surveill\u00e9e active",
+        reasons: "Raisons actives",
+        noReasons: "Aucune alerte active parmi les sources configurées",
         sources: "Sources",
-        updated: "\u00c9valu\u00e9",
+        health: "Santé des sources",
+        degraded: "dégradée",
+        updated: "Évalué",
       },
       de: {
-        normal: "Normal",
         automatic: "Automatisch",
+        external: "Extern",
+        infrastructure: "Infrastruktur",
         manual: "Manueller Override",
-        reasons: "Warum",
-        noReasons: "Keine aktive Warnung oder \u00fcberwachte St\u00f6rung",
+        reasons: "Aktive Gründe",
+        noReasons: "Keine aktive Warnung in den konfigurierten Quellen",
         sources: "Quellen",
+        health: "Quellenstatus",
+        degraded: "eingeschränkt",
         updated: "Ausgewertet",
       },
     };
@@ -79,26 +88,23 @@ class DefconHaCard extends HTMLElement {
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
-      .replaceAll('\"', "&quot;")
+      .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
 
-  _safeUrl(value) {
-    try {
-      const url = new URL(String(value || ""));
-      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
-    } catch {
-      return "";
-    }
-  }
-
   _sourceIcon(source) {
-    switch ((source || "").toUpperCase()) {
-      case "NINA": return "\u26a0";
-      case "DWD": return "\u2601";
-      case "HVV": return "\u2194";
-      default: return "\u2022";
-    }
+    const s = (source || "").toLowerCase();
+    if (s.includes("nina")) return "⚠";
+    if (s.includes("dwd")) return "☁";
+    if (s.includes("hochwasser") || s.includes("pegel")) return "≈";
+    if (s.includes("uba")) return "◌";
+    if (s.includes("bfs")) return "☢";
+    if (s.includes("blitz")) return "ϟ";
+    if (s.includes("noaa")) return "☀";
+    if (s.includes("incendie")) return "🔥";
+    if (s.includes("électrique") || s.includes("electric")) return "⚡";
+    if (s.includes("internet")) return "↔";
+    return "•";
   }
 
   _render() {
@@ -114,22 +120,19 @@ class DefconHaCard extends HTMLElement {
     const attrs = stateObj.attributes || {};
     const level = Number(stateObj.state) || 5;
     const autoLevel = Number(attrs.automatic_level) || level;
-    const localLevel = Number(attrs.local_level) || 5;
-    const contextLevel = attrs.context_level == null ? null : Number(attrs.context_level);
-    const contextStatus = attrs.context_status || "unknown";
+    const externalLevel = Number(attrs.external_level) || 5;
+    const infrastructureLevel = Number(attrs.infrastructure_level) || 5;
     const color = attrs.color || "var(--primary-color)";
     const reasons = Array.isArray(attrs.reasons) ? attrs.reasons : [];
+    const degraded = Array.isArray(attrs.degraded_sources) ? attrs.degraded_sources : [];
     const sourceEntities = Array.isArray(attrs.source_entities) ? attrs.source_entities : [];
     const manual = attrs.manual_override || "auto";
-    const report = attrs.context_report || "";
     const evaluated = attrs.evaluated_at
       ? new Date(attrs.evaluated_at).toLocaleString(this._hass.language)
       : "";
 
     const reasonsHtml = reasons.length
-      ? reasons.map((reason) => {
-          const sourceUrl = this._safeUrl(reason.source_url);
-          return `
+      ? reasons.map((reason) => `
           <div class="reason">
             <div class="reason-head">
               <span class="source">${this._escape(this._sourceIcon(reason.source))} ${this._escape(reason.source)}</span>
@@ -137,10 +140,16 @@ class DefconHaCard extends HTMLElement {
             </div>
             <div class="reason-title">${this._escape(reason.title)}</div>
             ${reason.detail ? `<div class="reason-detail">${this._escape(reason.detail)}</div>` : ""}
-            ${sourceUrl ? `<div class="reason-link"><a href="${this._escape(sourceUrl)}" target="_blank" rel="noopener noreferrer">Ouvrir la source</a></div>` : ""}
-          </div>`;
-        }).join("")
+          </div>`).join("")
       : `<div class="empty">${labels.noReasons}</div>`;
+
+    const degradedHtml = degraded.length
+      ? `<div class="health warning"><b>${labels.health}:</b> ${degraded.length} ${labels.degraded}
+          <div class="degraded-list">${degraded.map((item) =>
+            `<code>${this._escape(item.entity_id)} (${this._escape(item.status)})</code>`
+          ).join("")}</div>
+        </div>`
+      : `<div class="health ok"><b>${labels.health}:</b> OK</div>`;
 
     const sourceHtml = this._config.show_sources !== false && sourceEntities.length
       ? `<div class="sources"><span>${labels.sources}</span>${sourceEntities.map((id) => `<code>${this._escape(id)}</code>`).join("")}</div>`
@@ -159,9 +168,6 @@ class DefconHaCard extends HTMLElement {
         .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .pill { border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 4px 8px; font-size: 12px; }
         .body { padding: 14px 16px 16px; }
-        .context-box { background: var(--secondary-background-color); border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.35; }
-        .context-meta { margin-top: 5px; font-size: 11px; opacity: .62; }
-        .report { white-space: pre-wrap; font-size: 13px; line-height: 1.45; background: var(--secondary-background-color); border-radius: 10px; padding: 12px; margin: 10px 0 14px; }
         .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .65; margin-bottom: 8px; }
         .reason { padding: 10px 0; border-top: 1px solid var(--divider-color); }
         .reason:first-of-type { border-top: 0; }
@@ -170,10 +176,12 @@ class DefconHaCard extends HTMLElement {
         .reason-level { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 7px; background: var(--secondary-background-color); }
         .reason-title { margin-top: 4px; font-weight: 650; line-height: 1.25; }
         .reason-detail { margin-top: 4px; font-size: 13px; line-height: 1.35; opacity: .78; }
-        .reason-link { margin-top: 6px; font-size: 12px; }
-        .reason-link a { color: var(--primary-color); text-decoration: none; }
-        .reason-link a:hover { text-decoration: underline; }
         .empty { font-size: 14px; opacity: .72; padding: 4px 0 8px; }
+        .health { margin-top: 12px; border-radius: 10px; padding: 10px; font-size: 12px; background: var(--secondary-background-color); }
+        .health.warning { border-left: 4px solid var(--warning-color, #f9a825); }
+        .health.ok { opacity: .75; }
+        .degraded-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+        .degraded-list code { font-size: 10px; }
         .sources { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider-color); font-size: 11px; opacity: .72; }
         .sources code { background: var(--secondary-background-color); border-radius: 4px; padding: 2px 5px; }
         .footer { margin-top: 10px; font-size: 11px; opacity: .5; }
@@ -184,22 +192,20 @@ class DefconHaCard extends HTMLElement {
           <div class="title">${this._escape(this._config.title)}</div>
           <div class="level-row">
             <div class="level">DEFCON ${this._escape(level)}</div>
-            <div class="name">${this._escape(attrs.level_name || labels.normal)}</div>
+            <div class="name">${this._escape(attrs.level_name || "Normal")}</div>
           </div>
           <div class="summary">${this._escape(attrs.summary || labels.noReasons)}</div>
           <div class="meta">
-            <span class="pill">Local: DEFCON ${this._escape(localLevel)}</span>
-            <span class="pill">Context: ${contextLevel == null ? "—" : "DEFCON " + this._escape(contextLevel)} (${this._escape(contextStatus)})</span>
+            <span class="pill">${labels.external}: DEFCON ${this._escape(externalLevel)}</span>
+            <span class="pill">${labels.infrastructure}: DEFCON ${this._escape(infrastructureLevel)}</span>
             <span class="pill">${labels.automatic}: DEFCON ${this._escape(autoLevel)}</span>
             ${manual !== "auto" ? `<span class="pill">${labels.manual}: ${this._escape(manual.replace("defcon_", "DEFCON "))}</span>` : ""}
           </div>
         </div>
         <div class="body">
-          <div class="section-title">Context</div>
-          <div class="context-box">${this._escape(attrs.context_summary || "No context feed available")}<div class="context-meta">Status: ${this._escape(contextStatus)} · valid until: ${this._escape(attrs.context_valid_until || "—")}</div></div>
-          ${report ? `<div class="section-title">Rapport contextuel</div><div class="report">${this._escape(report)}</div>` : ""}
           <div class="section-title">${labels.reasons}</div>
           ${reasonsHtml}
+          ${degradedHtml}
           ${sourceHtml}
           ${evaluated ? `<div class="footer">${labels.updated}: ${this._escape(evaluated)}</div>` : ""}
         </div>
@@ -224,11 +230,11 @@ if (!window.customCards.some((card) => card.type === "defcon-ha-card")) {
   window.customCards.push({
     type: "defcon-ha-card",
     name: "DEFCON Home",
-    description: "Household situation level with active reasons from NINA, DWD, HVV and other HA entities.",
+    description: "Local deterministic household situation engine.",
     preview: true,
     getEntitySuggestion: (hass, entityId) => {
       const state = hass.states?.[entityId];
-      return state?.attributes?.automatic_level !== undefined ? { entity: entityId } : null;
+      return state?.attributes?.engine === "local_deterministic" ? { entity: entityId } : null;
     },
   });
 }
