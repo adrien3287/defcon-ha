@@ -23,7 +23,7 @@ async def async_setup_entry(
 
 
 class DefconRefreshButton(CoordinatorEntity[DefconCoordinator], ButtonEntity):
-    """Force a local/context reevaluation."""
+    """Force a deterministic local reevaluation."""
 
     _attr_has_entity_name = True
     _attr_name = "Refresh"

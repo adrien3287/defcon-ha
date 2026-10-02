@@ -10,7 +10,15 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CARD_FILE, CARD_URL, DOMAIN, PLATFORMS
+from .const import (
+    CARD_FILE,
+    CARD_URL,
+    CONF_DWD_ADVANCE_ENTITIES,
+    CONF_DWD_CURRENT_ENTITIES,
+    CONF_DWD_ENTITIES,
+    DOMAIN,
+    PLATFORMS,
+)
 from .coordinator import DefconCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,6 +58,37 @@ async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
         return
     coordinator.async_start()
     await coordinator.async_request_refresh()
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate v0.2 config entries away from the GitHub context feed."""
+    if entry.version >= 2:
+        return True
+
+    data = dict(entry.data)
+    legacy_dwd = data.pop(CONF_DWD_ENTITIES, [])
+    if isinstance(legacy_dwd, (list, tuple)):
+        data.setdefault(
+            CONF_DWD_CURRENT_ENTITIES,
+            [e for e in legacy_dwd if "antici" not in e.lower() and "advance" not in e.lower()],
+        )
+        data.setdefault(
+            CONF_DWD_ADVANCE_ENTITIES,
+            [e for e in legacy_dwd if "antici" in e.lower() or "advance" in e.lower()],
+        )
+
+    for legacy_key in (
+        "context_enabled",
+        "github_owner",
+        "github_repo",
+        "github_path",
+        "github_token",
+        "hvv_entities",
+    ):
+        data.pop(legacy_key, None)
+
+    hass.config_entries.async_update_entry(entry, data=data, version=2)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
