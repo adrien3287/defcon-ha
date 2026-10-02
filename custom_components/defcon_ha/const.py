@@ -77,10 +77,10 @@ DEFAULT_NOAA_ENTITIES = [
 ]
 
 DEFAULT_FIRE_HEAT_ENTITIES = [
-    "binary_sensor.chaufferie_detection_incendie_entree_0",
+    "binary_sensor.chaufferie_detection_incendie_entree_1",
 ]
 DEFAULT_FIRE_SMOKE_ENTITIES = [
-    "binary_sensor.chaufferie_detection_incendie_entree_1",
+    "binary_sensor.chaufferie_detection_incendie_entree_0",
 ]
 
 DEFAULT_GRID_VOLTAGE_ENTITIES = [
