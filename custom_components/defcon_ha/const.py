@@ -125,3 +125,4 @@ LEVEL_COLORS = {
 }
 
 EVENT_LEVEL_CHANGED = "defcon_ha_level_changed"
+EVENT_RSS_ANALYZED = "lagezentrum_rss_analyzed"
