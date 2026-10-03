@@ -11,7 +11,7 @@
 #
 # The automation emits "lagezentrum_rss_analyzed".
 # DEFCON Home stores the latest relevant item in:
-#   sensor.lagezentrum_news_context
+#   sensor.defcon_home_lagezentrum_news_context
 #
 # RSS/AI context is informational only and does NOT modify DEFCON.
 
