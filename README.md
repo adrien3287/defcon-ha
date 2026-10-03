@@ -1,5 +1,25 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.0
+
+Version 0.4 adds a persistent **contextual situation layer** alongside the
+deterministic DEFCON engine.
+
+- keeps several contextual events active simultaneously instead of only the last article;
+- persists active/stale/resolved events through Home Assistant restarts;
+- expires information by category and archives it after a stale grace period;
+- correlates repeated reports through a stable `event_key` and counts independent sources;
+- separates source tiers (`local`, `national`, `strategic`) and source classes;
+- combines deterministic source trust, AI classification confidence and corroboration into a contextual confidence score;
+- adds categories for cyberattack, sabotage, energy, logistics, supply, health and geopolitics;
+- exposes an **indicative context DEFCON recommendation** without ever changing the real deterministic DEFCON;
+- adds a three-tier Feedreader/Gemini pipeline and a multi-event dashboard;
+- preserves the existing `sensor.defcon_home_lagezentrum_news_context` entity for compatibility.
+
+The deterministic engine remains fully local and AI-free. Gemini is optional and
+is used only by the external context pipeline.
+
+
 ## 0.3.2
 
 - adds an optional event-driven RSS/Gemini context sensor;
@@ -17,7 +37,7 @@
 
 DEFCON Home is a **local deterministic situation engine** for Home Assistant.
 
-Version 0.3 removes the private GitHub JSON/context feed completely. The automatic DEFCON level is calculated only from Home Assistant entities already available in the installation. No ChatGPT/AI call is required at runtime.
+Since version 0.3 the private GitHub JSON/context feed is removed. The automatic DEFCON level is calculated only from Home Assistant entities already available in the installation. Version 0.4 adds an optional, separate AI-assisted context layer; no AI call is required for the deterministic DEFCON engine.
 
 ## Architecture
 
@@ -155,7 +175,10 @@ Unavailable source entities are reported separately as degraded monitoring and a
 - `sensor.defcon_home_external_level`
 - `sensor.defcon_home_infrastructure_level`
 - `sensor.defcon_home_source_health`
-- `sensor.defcon_home_lagezentrum_news_context` (optional RSS/Gemini context)
+- `sensor.defcon_home_context_status`
+- `sensor.defcon_home_context_active_events`
+- `sensor.defcon_home_context_recommended_defcon` (advisory only)
+- `sensor.defcon_home_lagezentrum_news_context` (detail/compatibility context sensor)
 - manual override select
 - refresh button
 
@@ -182,27 +205,120 @@ defcon_ha_level_changed
 
 with the old/new level, external level, infrastructure level, summary and active reasons.
 
-## Optional RSS / Gemini context
+## Context engine (v0.4)
 
-The integration can listen for the Home Assistant event:
+The integration listens for:
 
 ```text
 lagezentrum_rss_analyzed
 ```
 
-and stores the latest relevant item in:
+This event can be produced by the example Feedreader → Google AI Task
+automation in `examples/lagezentrum_rss_context.yaml`.
 
-```text
-sensor.defcon_home_lagezentrum_news_context
-```
+### Separation from DEFCON
 
-Expected event fields include `relevant`, `importance`, `category`, `scope`,
-`protective_action`, `summary_fr`, `reason`, `recommended_action`,
-`title`, `link` and `feed_url`.
+The context engine is deliberately independent from the deterministic DEFCON
+calculation.
 
-See `examples/lagezentrum_rss_context.yaml` for a Feedreader → Google AI Task
-automation. The AI context layer is deliberately separate from the deterministic
-DEFCON calculation.
+`sensor.defcon_home_context_recommended_defcon` is **advisory only**. It can
+help the operator decide whether to investigate or use the manual override, but
+its state is never injected into `sensor.defcon_home_level`.
+
+This prevents one misclassified article or AI hallucination from automatically
+changing the household alert level.
+
+### Active events and lifecycle
+
+Relevant reports are stored as contextual events. Several incidents can coexist.
+
+Each event carries, among other fields:
+
+- stable `event_key`;
+- `importance` 0–3;
+- category and geographic scope;
+- direct/potential/no relevance for Marmstorf;
+- affected area;
+- protective-action flag;
+- source tier and source class;
+- AI classification confidence;
+- combined contextual confidence;
+- source/corroboration count;
+- first/last seen timestamps and expiry;
+- `new`, `update` or `resolved` lifecycle;
+- French summary, relevance explanation and recommended action.
+
+An explicit all-clear, service restoration or warning cancellation can close an
+event immediately with `lifecycle=resolved`.
+
+Without an explicit resolution, events age automatically:
+
+| Category | Active validity |
+| --- | ---: |
+| transport | 4 h |
+| fire, weather | 8 h |
+| security, electricity, telecom, pollution | 12 h |
+| water, infrastructure, energy, cyber, sabotage, supply, logistics, health | 24 h |
+| geopolitical | 36 h |
+| other | 12 h |
+
+After expiry an event becomes `stale`. It remains visible for a 24-hour grace
+period, then moves to the recent-event history. A new correlated report refreshes
+its expiry.
+
+### Correlation and confidence
+
+Reports with the same `event_key` are merged. The same article link is also
+deduplicated. Cross-source semantic correlation therefore depends on the AI
+producing a stable event key for the same incident.
+
+Source classes have deterministic trust baselines:
+
+- official: 95;
+- public media: 85;
+- established media: 80;
+- other: 60.
+
+The context engine combines the source baseline with
+`analysis_confidence`, then adds a small corroboration bonus for additional
+independent sources. The resulting `confidence_score` is a prioritization aid,
+not a guarantee that the report is true.
+
+### Source tiers
+
+The example source plan in `examples/lagezentrum_sources.md` uses three tiers:
+
+1. **Local/Hamburg** — NDR Hamburg, Polizei Hamburg, Feuerwehr Hamburg,
+   Bundespolizei Hamburg and Tagesschau Hamburg.
+2. **Germany / critical infrastructure** — Tagesschau Inland, BBK,
+   Bundesnetzagentur and BSI/BürgerCERT.
+3. **Strategic Europe/world** — Tagesschau Europa, Ausland and Wirtschaft,
+   aggressively filtered for concrete short-term relevance to Germany/Hamburg.
+
+A high-volume CERT-Bund vulnerability feed is documented as optional because
+ordinary vulnerability advisories would otherwise generate unnecessary AI calls
+and noise.
+
+### Context sensors
+
+`sensor.defcon_home_context_status` reports `idle`, `information`,
+`watch`, `important` or `stale`.
+
+`sensor.defcon_home_context_active_events` reports the number of active
+context events.
+
+`sensor.defcon_home_context_recommended_defcon` reports the advisory context
+level (5, 4 or 3 in v0.4).
+
+`sensor.defcon_home_lagezentrum_news_context` keeps the 0.3.x entity identity
+and exposes the highest-priority event plus `active_events`, `stale_events`
+and `recent_events` attributes for dashboards.
+
+See:
+
+- `examples/lagezentrum_rss_context.yaml`
+- `examples/lagezentrum_sources.md`
+- `examples/lagezentrum_dashboard.yaml`
 
 ## Resilience
 

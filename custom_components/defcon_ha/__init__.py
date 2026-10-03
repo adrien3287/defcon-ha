@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
 from homeassistant.components.http import StaticPathConfig
@@ -21,14 +22,20 @@ from .const import (
     DOMAIN,
     PLATFORMS,
 )
+from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _entry_data(hass: HomeAssistant) -> dict[str, DefconCoordinator]:
+def _entry_data(hass: HomeAssistant) -> dict[str, Any]:
     """Return integration runtime data."""
     return hass.data.setdefault(DOMAIN, {})
+
+
+def _context_key(entry: ConfigEntry) -> str:
+    """Return runtime key for the independent context coordinator."""
+    return f"{entry.entry_id}_context"
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
@@ -60,6 +67,10 @@ async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
         return
     coordinator.async_start()
     await coordinator.async_request_refresh()
+
+    context = _entry_data(hass).get(_context_key(entry))
+    if isinstance(context, ContextCoordinator):
+        await context.async_request_refresh()
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -120,10 +131,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_register_frontend(hass)
 
     coordinator = DefconCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
-    coordinator.async_start()
+    context = ContextCoordinator(hass, entry)
 
-    _entry_data(hass)[entry.entry_id] = coordinator
+    await coordinator.async_config_entry_first_refresh()
+    await context.async_config_entry_first_refresh()
+
+    coordinator.async_start()
+    context.async_start()
+
+    runtime = _entry_data(hass)
+    runtime[entry.entry_id] = coordinator
+    runtime[_context_key(entry)] = context
+
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -131,13 +150,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    coordinator = _entry_data(hass).get(entry.entry_id)
-    if coordinator:
+    runtime = _entry_data(hass)
+    coordinator = runtime.get(entry.entry_id)
+    context = runtime.get(_context_key(entry))
+
+    if isinstance(coordinator, DefconCoordinator):
         coordinator.async_stop()
+    if isinstance(context, ContextCoordinator):
+        context.async_stop()
 
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        _entry_data(hass).pop(entry.entry_id, None)
+        runtime.pop(entry.entry_id, None)
+        runtime.pop(_context_key(entry), None)
 
     try:
         remove_extra_js_url(hass, CARD_URL)

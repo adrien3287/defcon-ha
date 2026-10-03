@@ -1,41 +1,105 @@
-# Lagezentrum RSS context automation for Home Assistant.
+# DEFCON Home v0.4 - Feedreader -> Gemini context pipeline
 #
 # Prerequisite:
-#   AI Task entity: ai_task.google_ai_task
+#   ai_task.google_ai_task
 #
-# Add these Feedreader integrations in Home Assistant:
-#   https://www.ndr.de/nachrichten/hamburg/index~rss2.xml
-#   https://www.presseportal.de/rss/dienststelle_6337.rss2
-#   https://www.presseportal.de/rss/dienststelle_82522.rss2
-#   https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml
+# Configure the feeds listed in examples/lagezentrum_sources.md with the
+# Home Assistant Feedreader integration. This automation listens to every
+# feedreader event, adds deterministic source metadata, asks Gemini to classify
+# the article, then emits "lagezentrum_rss_analyzed".
 #
-# The automation emits "lagezentrum_rss_analyzed".
-# DEFCON Home stores the latest relevant item in:
-#   sensor.defcon_home_lagezentrum_news_context
-#
-# RSS/AI context is informational only and does NOT modify DEFCON.
+# The DEFCON Home context engine:
+# - keeps several active events at the same time;
+# - correlates reports with the same event_key;
+# - expires events according to their category;
+# - accepts lifecycle=resolved for explicit all-clear / restoration articles;
+# - exposes a context-only recommended DEFCON;
+# - NEVER changes the deterministic DEFCON level directly.
 
 automation:
-  - alias: "Lagezentrum - Analyse RSS Gemini"
-    id: lagezentrum_analyse_rss_gemini
+  - alias: "Lagezentrum - Analyse RSS Gemini v0.4"
+    id: lagezentrum_analyse_rss_gemini_v04
     mode: queued
-    max: 20
+    max: 50
 
     triggers:
       - trigger: event
         event_type: feedreader
 
     actions:
+      - variables:
+          feed_url: "{{ trigger.event.data.feed_url | default('') }}"
+          source_name: >-
+            {% set sources = {
+              'https://www.ndr.de/nachrichten/hamburg/index~rss2.xml': 'NDR Hamburg',
+              'https://www.presseportal.de/rss/dienststelle_6337.rss2': 'Polizei Hamburg',
+              'https://www.presseportal.de/rss/dienststelle_82522.rss2': 'Feuerwehr Hamburg',
+              'https://www.presseportal.de/rss/dienststelle_70254.rss2': 'Bundespolizei Hamburg',
+              'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml': 'Tagesschau Hamburg',
+              'https://www.tagesschau.de/inland/index~rss2.xml': 'Tagesschau Inland',
+              'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml': 'BBK',
+              'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324': 'Bundesnetzagentur',
+              'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml?nn=654666': 'Bundesnetzagentur Gas',
+              'https://wid.cert-bund.de/content/public/buergercert/rss': 'BSI BürgerCERT',
+              'https://www.tagesschau.de/ausland/index~rss2.xml': 'Tagesschau Ausland',
+              'https://www.tagesschau.de/ausland/europa/index~rss2.xml': 'Tagesschau Europa',
+              'https://www.tagesschau.de/wirtschaft/index~rss2.xml': 'Tagesschau Wirtschaft'
+            } %}
+            {{ sources.get(feed_url, 'RSS') }}
+
+          source_tier: >-
+            {% set local = [
+              'https://www.ndr.de/nachrichten/hamburg/index~rss2.xml',
+              'https://www.presseportal.de/rss/dienststelle_6337.rss2',
+              'https://www.presseportal.de/rss/dienststelle_82522.rss2',
+              'https://www.presseportal.de/rss/dienststelle_70254.rss2',
+              'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml'
+            ] %}
+            {% set strategic = [
+              'https://www.tagesschau.de/ausland/index~rss2.xml',
+              'https://www.tagesschau.de/ausland/europa/index~rss2.xml',
+              'https://www.tagesschau.de/wirtschaft/index~rss2.xml'
+            ] %}
+            {% if feed_url in local %}local
+            {% elif feed_url in strategic %}strategic
+            {% else %}national
+            {% endif %}
+
+          source_class: >-
+            {% set official = [
+              'https://www.presseportal.de/rss/dienststelle_6337.rss2',
+              'https://www.presseportal.de/rss/dienststelle_82522.rss2',
+              'https://www.presseportal.de/rss/dienststelle_70254.rss2',
+              'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml',
+              'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324',
+              'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml?nn=654666',
+              'https://wid.cert-bund.de/content/public/buergercert/rss'
+            ] %}
+            {% if feed_url in official %}official
+            {% elif 'ndr.de' in feed_url or 'tagesschau.de' in feed_url %}public_media
+            {% else %}other
+            {% endif %}
+
+          published_at: >-
+            {{ trigger.event.data.published
+               | default(trigger.event.data.updated
+               | default(trigger.event.data.created
+               | default(''))) }}
+
       - action: ai_task.generate_data
         data:
           entity_id: ai_task.google_ai_task
-          task_name: "Lagezentrum RSS"
+          task_name: "Lagezentrum RSS v0.4"
           instructions: >-
             Tu analyses une information pour un centre de situation domestique
             situé à Hamburg-Marmstorf.
 
-            ARTICLE À ANALYSER
+            SOURCE
+            Nom: {{ source_name }}
+            Niveau géographique de la source: {{ source_tier }}
+            Classe de confiance de la source: {{ source_class }}
 
+            ARTICLE
             Titre:
             {{ trigger.event.data.title | default('') }}
 
@@ -45,59 +109,93 @@ automation:
             Contenu:
             {{ trigger.event.data.content | default('') }}
 
-            Source:
-            {{ trigger.event.data.feed_url | default('') }}
-
             Lien:
             {{ trigger.event.data.link | default('') }}
 
-            Analyse uniquement l'impact pratique potentiel pour une famille
-            vivant à Hamburg-Marmstorf.
+            Date publiée:
+            {{ published_at }}
 
-            Importance:
-            0 = sans intérêt pratique
-            1 = information utile mais sans action
-            2 = situation à surveiller, sans consigne de protection immédiate
-            3 = événement important avec consigne officielle de protection,
-                impact direct potentiel sur l'habitation ou nécessité d'une action immédiate
+            OBJECTIF
+            Détermine uniquement l'intérêt opérationnel de cet article pour une
+            famille vivant à Hamburg-Marmstorf. Tu peux prendre en compte un
+            risque plus large si celui-ci peut avoir un impact concret à court
+            terme sur Hambourg ou le nord de l'Allemagne: cyberattaque,
+            sabotage, énergie, télécommunications, transports, logistique,
+            sécurité, pollution, eau, météo ou événement géopolitique.
 
-            Si l'article contient une consigne explicite adressée à la population
-            comme fermer fenêtres/portes, couper la ventilation, éviter une zone,
-            ne pas boire l'eau, évacuer ou se mettre à l'abri,
-            alors importance doit être 3.
+            IMPORTANCE
+            0 = sans intérêt pratique pour le Lagezentrum
+            1 = information utile, sans besoin de surveillance particulière
+            2 = événement à surveiller ou risque crédible pouvant avoir un impact
+                à court terme
+            3 = impact direct important, perturbation majeure d'infrastructure,
+                ou consigne explicite de protection / action immédiate
 
-            Catégories autorisées:
+            Une consigne explicite à la population comme fermer les fenêtres,
+            couper la ventilation, éviter une zone, ne pas boire l'eau,
+            évacuer ou se mettre à l'abri impose importance=3.
+
+            CATÉGORIES AUTORISÉES
             security, fire, infrastructure, electricity, water, telecom,
-            transport, weather, pollution, supply, other
+            transport, weather, pollution, energy, cyber, sabotage,
+            supply, logistics, health, geopolitical, other
 
             Utilise la cause principale comme catégorie.
-            Exemples:
             - incendie avec fumées -> fire
-            - pollution sans incendie -> pollution
-            - panne électrique -> electricity
-            - rupture ou contamination d'eau -> water
-            - panne Internet/mobile -> telecom
-            - perturbation ferroviaire majeure -> transport
+            - attaque informatique -> cyber
+            - sabotage physique -> sabotage
+            - pénurie / rupture logistique -> supply ou logistics
+            - crise gaz/électricité sans panne locale -> energy
 
-            Portée:
-            local, hamburg, germany, europe, world
+            PORTÉE
+            local, hamburg, north_germany, germany, europe, world
 
-            Règle géographique stricte:
-            Ne jamais élargir la zone concernée au-delà de ce qui est explicitement
-            indiqué dans l'article.
-            Si l'article dit seulement "plusieurs quartiers", ne suppose pas que
-            toute la ville de Hambourg est concernée.
-            Si Hamburg-Marmstorf n'est pas explicitement cité, indique clairement
-            que l'impact sur Marmstorf est potentiel ou inconnu.
-            Ne confonds pas "événement situé à Hambourg" avec
-            "événement affectant tout Hambourg".
+            PERTINENCE POUR MARMSTORF
+            direct = Marmstorf/Harburg est explicitement touché ou une action
+                     immédiate est raisonnablement nécessaire
+            potential = l'événement est pertinent mais l'impact local n'est pas
+                        confirmé
+            none = pas d'impact pratique identifiable
 
-            Sois conservateur.
-            Un fait divers ordinaire, le sport, la culture, une information
-            politique sans conséquence opérationnelle immédiate ou un simple
-            retard isolé doivent être non pertinents ou avoir une importance 0.
+            RÈGLE GÉOGRAPHIQUE STRICTE
+            Ne jamais élargir la zone concernée au-delà de ce qui est écrit.
+            Un événement "à Hambourg" n'affecte pas automatiquement tout Hambourg.
+            Si Marmstorf/Harburg n'est pas cité, ne prétends pas qu'il est touché.
 
-            Ne déduis aucun fait absent du texte.
+            CYCLE DE VIE
+            lifecycle doit être:
+            - new: nouvel événement
+            - update: mise à jour d'un événement en cours
+            - resolved: UNIQUEMENT si l'article indique explicitement la fin de
+              l'événement, la levée d'une alerte, une Entwarnung ou le
+              rétablissement du service.
+
+            EVENT_KEY
+            Génère un identifiant court, stable et descriptif de l'incident,
+            en minuscules avec tirets, sans numéro aléatoire.
+            Des articles parlant du même incident devraient produire la même clé.
+            Exemples:
+            hamburg-steinwerder-port-fire
+            germany-telecom-major-outage
+            baltic-sea-cable-sabotage
+
+            CONFIANCE
+            analysis_confidence de 0 à 100 évalue uniquement ta confiance dans
+            ta propre classification à partir du texte fourni.
+            N'invente jamais de faits pour augmenter la confiance.
+
+            RÈGLES DE FILTRAGE
+            Un fait divers ordinaire, le sport, la culture, la politique sans
+            conséquence opérationnelle, un accident mineur, un vol ou un simple
+            retard isolé doivent être non pertinents ou importance=0.
+
+            Pour les informations cyber, une vulnérabilité logicielle ordinaire
+            n'est pas une crise. Ne rends l'article pertinent que s'il décrit
+            une exploitation active importante, une campagne large, une panne,
+            une atteinte à une infrastructure critique ou un risque concret pour
+            des services utilisés en Allemagne.
+
+            Sois conservateur. Ne déduis aucun fait absent du texte.
             Résume en français en maximum deux phrases.
 
           structure:
@@ -106,6 +204,7 @@ automation:
               required: true
               selector:
                 boolean:
+
             importance:
               description: "Importance opérationnelle de 0 à 3"
               required: true
@@ -113,48 +212,96 @@ automation:
                 number:
                   min: 0
                   max: 3
+
             category:
               description: "Catégorie opérationnelle"
               required: true
               selector:
                 text:
+
             scope:
               description: "Portée géographique"
               required: true
               selector:
                 text:
+
+            direct_relevance:
+              description: "direct, potential ou none"
+              required: true
+              selector:
+                text:
+
+            affected_area:
+              description: "Zone explicitement concernée, sans extrapolation"
+              required: true
+              selector:
+                text:
+
             protective_action:
-              description: "Une consigne officielle de protection est-elle présente ?"
+              description: "Consigne explicite de protection présente"
               required: true
               selector:
                 boolean:
+
+            lifecycle:
+              description: "new, update ou resolved"
+              required: true
+              selector:
+                text:
+
+            event_key:
+              description: "Clé stable et descriptive de l'incident"
+              required: true
+              selector:
+                text:
+
+            analysis_confidence:
+              description: "Confiance dans la classification, de 0 à 100"
+              required: true
+              selector:
+                number:
+                  min: 0
+                  max: 100
+
             summary_fr:
               description: "Résumé factuel en français, maximum deux phrases"
               required: true
               selector:
                 text:
+
             reason:
               description: "Pourquoi l'information est pertinente ou non"
               required: true
               selector:
                 text:
+
             recommended_action:
               description: "Action pratique éventuelle, sinon 'aucune'"
               required: true
               selector:
                 text:
+
         response_variable: rss_result
 
       - event: lagezentrum_rss_analyzed
         event_data:
           title: "{{ trigger.event.data.title | default('') }}"
           link: "{{ trigger.event.data.link | default('') }}"
-          feed_url: "{{ trigger.event.data.feed_url | default('') }}"
+          feed_url: "{{ feed_url }}"
+          published_at: "{{ published_at }}"
+          source_name: "{{ source_name }}"
+          source_tier: "{{ source_tier | trim }}"
+          source_class: "{{ source_class | trim }}"
           relevant: "{{ rss_result.data.relevant | default(false) }}"
           importance: "{{ rss_result.data.importance | default(0) }}"
           category: "{{ rss_result.data.category | default('other') }}"
           scope: "{{ rss_result.data.scope | default('') }}"
+          direct_relevance: "{{ rss_result.data.direct_relevance | default('potential') }}"
+          affected_area: "{{ rss_result.data.affected_area | default('') }}"
           protective_action: "{{ rss_result.data.protective_action | default(false) }}"
+          lifecycle: "{{ rss_result.data.lifecycle | default('new') }}"
+          event_key: "{{ rss_result.data.event_key | default('') }}"
+          analysis_confidence: "{{ rss_result.data.analysis_confidence | default(75) }}"
           summary_fr: "{{ rss_result.data.summary_fr | default('') }}"
           reason: "{{ rss_result.data.reason | default('') }}"
           recommended_action: "{{ rss_result.data.recommended_action | default('aucune') }}"

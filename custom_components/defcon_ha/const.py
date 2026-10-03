@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -126,3 +126,31 @@ LEVEL_COLORS = {
 
 EVENT_LEVEL_CHANGED = "defcon_ha_level_changed"
 EVENT_RSS_ANALYZED = "lagezentrum_rss_analyzed"
+
+# Context engine. This layer never changes deterministic DEFCON by itself.
+CONTEXT_REFRESH_MINUTES = 5
+CONTEXT_ACTIVE_LIMIT = 12
+CONTEXT_HISTORY_LIMIT = 30
+CONTEXT_STALE_GRACE_HOURS = 24
+
+# Default validity window for a contextual event. A new report for the same
+# event refreshes the expiry time; an explicit lifecycle=resolved closes it.
+CONTEXT_TTL_HOURS = {
+    "transport": 4,
+    "fire": 8,
+    "weather": 8,
+    "security": 12,
+    "electricity": 12,
+    "telecom": 12,
+    "pollution": 12,
+    "water": 24,
+    "infrastructure": 24,
+    "energy": 24,
+    "cyber": 24,
+    "sabotage": 24,
+    "supply": 24,
+    "logistics": 24,
+    "health": 24,
+    "geopolitical": 36,
+    "other": 12,
+}

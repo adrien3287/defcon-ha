@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "DEFCON Home sources",
-        "description": "Configure deterministic Home Assistant sources. No GitHub JSON or AI is used.",
+        "description": "Configure deterministic Home Assistant sources. The DEFCON engine stays local and AI-free; optional context events are handled separately.",
         "data": {
           "nina_entities": "NINA warning entities",
           "dwd_current_entities": "DWD current warning-level entities",
