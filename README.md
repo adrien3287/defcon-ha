@@ -1,5 +1,18 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.2
+
+- adds `button.defcon_home_install_rss_sources` for one-click bulk installation of the curated Feedreader set;
+- installs only missing sources and skips existing Feedreader entries;
+- recognizes known legacy URL aliases for BBK and Bundesnetzagentur feeds;
+- reports configured/missing/failed sources as button attributes;
+- keeps the high-volume CERT-Bund security-advisory feed opt-in only;
+- adds RSS installation status and the install button to the Context dashboard.
+
+The installer creates normal Home Assistant `feedreader` config entries through
+Home Assistant's config-flow API. It does not edit `.storage` files directly.
+
+
 ## 0.4.1
 
 - shows the advisory Context DEFCON directly on the main DEFCON card;
@@ -188,6 +201,7 @@ Unavailable source entities are reported separately as degraded monitoring and a
 - `sensor.defcon_home_context_active_events`
 - `sensor.defcon_home_context_recommended_defcon` (advisory only)
 - `sensor.defcon_home_lagezentrum_news_context` (detail/compatibility context sensor)
+- `button.defcon_home_install_rss_sources` (bulk Feedreader installer)
 - manual override select
 - refresh button
 
@@ -293,6 +307,23 @@ The context engine combines the source baseline with
 `analysis_confidence`, then adds a small corroboration bonus for additional
 independent sources. The resulting `confidence_score` is a prioritization aid,
 not a guarantee that the report is true.
+
+### One-click RSS installation
+
+Version 0.4.2 exposes:
+
+```text
+button.defcon_home_install_rss_sources
+```
+
+Press it once to create all missing recommended Feedreader config entries.
+Already configured URLs are skipped. If a feed cannot be added, installation
+continues with the remaining sources and the failure is exposed in the button
+attributes.
+
+The button currently installs 13 curated feeds across local, national and
+strategic tiers. The high-volume CERT-Bund security-advisory feed remains
+excluded by design.
 
 ### Source tiers
 
