@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import RestoreSensor, SensorEntity
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, EVENT_RSS_ANALYZED
+from .const import DOMAIN
+from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
 
 
@@ -18,6 +19,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: DefconCoordinator = hass.data[DOMAIN][entry.entry_id]
+    context: ContextCoordinator = hass.data[DOMAIN][f"{entry.entry_id}_context"]
     async_add_entities(
         [
             DefconLevelSensor(coordinator, entry),
@@ -25,7 +27,10 @@ async def async_setup_entry(
             DefconExternalSensor(coordinator, entry),
             DefconInfrastructureSensor(coordinator, entry),
             DefconSourceHealthSensor(coordinator, entry),
-            LagezentrumNewsContextSensor(entry),
+            ContextStatusSensor(context, entry),
+            ContextActiveEventsSensor(context, entry),
+            ContextRecommendedDefconSensor(context, entry),
+            LagezentrumNewsContextSensor(context, entry),
         ]
     )
 
@@ -179,31 +184,14 @@ class DefconSourceHealthSensor(_DefconBaseSensor):
 
 
 
-class LagezentrumNewsContextSensor(RestoreSensor, SensorEntity):
-    """Keep the latest relevant RSS article classified by the user's AI automation."""
+class _ContextBaseSensor(CoordinatorEntity[ContextCoordinator], SensorEntity):
+    """Base class for the informational context layer."""
 
-    _attr_has_entity_name = False
-    _attr_name = "Lagezentrum News Context"
-    _attr_icon = "mdi:newspaper-variant-multiple"
-    _attr_should_poll = False
+    _attr_has_entity_name = True
 
-    def __init__(self, entry: ConfigEntry) -> None:
+    def __init__(self, coordinator: ContextCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_lagezentrum_news_context"
-        self._attr_native_value = "idle"
-        self._attrs: dict = {
-            "importance": 0,
-            "category": "other",
-            "scope": "",
-            "protective_action": False,
-            "summary_fr": "",
-            "reason": "",
-            "recommended_action": "aucune",
-            "title": "",
-            "link": "",
-            "feed_url": "",
-            "analyzed_at": "",
-        }
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": "DEFCON Home",
@@ -211,74 +199,135 @@ class LagezentrumNewsContextSensor(RestoreSensor, SensorEntity):
             "model": "Local deterministic situation engine",
         }
 
-    async def async_added_to_hass(self) -> None:
-        """Restore the previous context and subscribe to analyzed RSS events."""
-        await super().async_added_to_hass()
 
-        last_sensor_data = await self.async_get_last_sensor_data()
-        if last_sensor_data is not None and last_sensor_data.native_value is not None:
-            self._attr_native_value = last_sensor_data.native_value
+class ContextStatusSensor(_ContextBaseSensor):
+    """Overall state of active contextual events."""
 
-        last_state = await self.async_get_last_state()
-        if last_state is not None:
-            for key in self._attrs:
-                if key in last_state.attributes:
-                    self._attrs[key] = last_state.attributes[key]
+    _attr_name = "Context status"
+    _attr_icon = "mdi:radar"
 
-        self.async_on_remove(
-            self.hass.bus.async_listen(EVENT_RSS_ANALYZED, self._handle_rss_event)
-        )
+    def __init__(self, coordinator: ContextCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_context_status"
 
-    @callback
-    def _handle_rss_event(self, event: Event) -> None:
-        """Store only RSS items classified as relevant."""
-        data = event.data
-
-        relevant_raw = data.get("relevant", False)
-        relevant = (
-            relevant_raw
-            if isinstance(relevant_raw, bool)
-            else str(relevant_raw).strip().lower() in {"true", "1", "yes", "on"}
-        )
-        try:
-            importance = int(float(data.get("importance", 0)))
-        except (TypeError, ValueError):
-            importance = 0
-
-        if not relevant or importance < 1:
-            return
-
-        if importance >= 3:
-            state = "important"
-        elif importance == 2:
-            state = "watch"
-        else:
-            state = "information"
-
-        protective_raw = data.get("protective_action", False)
-        protective_action = (
-            protective_raw
-            if isinstance(protective_raw, bool)
-            else str(protective_raw).strip().lower() in {"true", "1", "yes", "on"}
-        )
-
-        self._attr_native_value = state
-        self._attrs = {
-            "importance": importance,
-            "category": str(data.get("category", "other")),
-            "scope": str(data.get("scope", "")),
-            "protective_action": protective_action,
-            "summary_fr": str(data.get("summary_fr", "")),
-            "reason": str(data.get("reason", "")),
-            "recommended_action": str(data.get("recommended_action", "aucune")),
-            "title": str(data.get("title", "")),
-            "link": str(data.get("link", "")),
-            "feed_url": str(data.get("feed_url", "")),
-            "analyzed_at": event.time_fired.isoformat(),
-        }
-        self.async_write_ha_state()
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.data.status
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Return the latest relevant contextual article."""
-        return self._attrs
+        data = self.coordinator.data
+        return {
+            "active_event_count": data.active_event_count,
+            "stale_event_count": data.stale_event_count,
+            "highest_importance": data.highest_importance,
+            "highest_confidence": data.highest_confidence,
+            "evaluated_at": data.evaluated_at.isoformat(),
+            "affects_defcon": False,
+        }
+
+
+class ContextActiveEventsSensor(_ContextBaseSensor):
+    """Number of currently active contextual events."""
+
+    _attr_name = "Context active events"
+    _attr_icon = "mdi:alert-decagram-outline"
+
+    def __init__(self, coordinator: ContextCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_context_active_events"
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.data.active_event_count
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            "stale_event_count": self.coordinator.data.stale_event_count,
+        }
+
+
+class ContextRecommendedDefconSensor(_ContextBaseSensor):
+    """Indicative DEFCON recommendation from the context layer only."""
+
+    _attr_name = "Context recommended DEFCON"
+    _attr_icon = "mdi:shield-search"
+
+    def __init__(self, coordinator: ContextCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_context_recommended_defcon"
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.data.recommended_defcon
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        top = self.coordinator.data.top_event or {}
+        return {
+            "advisory_only": True,
+            "affects_defcon": False,
+            "top_event_key": top.get("event_key", ""),
+            "top_event_title": top.get("title", ""),
+            "highest_importance": self.coordinator.data.highest_importance,
+            "highest_confidence": self.coordinator.data.highest_confidence,
+        }
+
+
+class LagezentrumNewsContextSensor(_ContextBaseSensor):
+    """Compatibility/detail sensor exposing the context event queue."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Lagezentrum News Context"
+    _attr_icon = "mdi:newspaper-variant-multiple"
+    _unrecorded_attributes = frozenset(
+        {"active_events", "stale_events", "recent_events"}
+    )
+
+    def __init__(self, coordinator: ContextCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        # Keep the 0.3.x unique ID so existing installations retain the entity.
+        self._attr_unique_id = f"{entry.entry_id}_lagezentrum_news_context"
+
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.data.status
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        data = self.coordinator.data
+        top = data.top_event or {}
+
+        attrs = {
+            "importance": top.get("importance", 0),
+            "category": top.get("category", "other"),
+            "scope": top.get("scope", ""),
+            "affected_area": top.get("affected_area", ""),
+            "direct_relevance": top.get("direct_relevance", ""),
+            "protective_action": top.get("protective_action", False),
+            "summary_fr": top.get("summary_fr", ""),
+            "reason": top.get("reason", ""),
+            "recommended_action": top.get("recommended_action", "aucune"),
+            "title": top.get("title", ""),
+            "link": top.get("link", ""),
+            "feed_url": top.get("feed_url", ""),
+            "source_name": top.get("source_name", ""),
+            "source_tier": top.get("source_tier", ""),
+            "source_class": top.get("source_class", ""),
+            "event_key": top.get("event_key", ""),
+            "event_status": top.get("status", ""),
+            "confidence_score": top.get("confidence_score", 0),
+            "corroboration_count": top.get("corroboration_count", 0),
+            "expires_at": top.get("expires_at", ""),
+            "last_seen": top.get("last_seen", ""),
+            "active_event_count": data.active_event_count,
+            "stale_event_count": data.stale_event_count,
+            "context_recommended_defcon": data.recommended_defcon,
+            "affects_defcon": False,
+            "active_events": data.active_events,
+            "stale_events": data.stale_events,
+            "recent_events": data.recent_events,
+            "evaluated_at": data.evaluated_at.isoformat(),
+        }
+        return attrs
