@@ -155,7 +155,7 @@ Unavailable source entities are reported separately as degraded monitoring and a
 - `sensor.defcon_home_external_level`
 - `sensor.defcon_home_infrastructure_level`
 - `sensor.defcon_home_source_health`
-- `sensor.lagezentrum_news_context` (optional RSS/Gemini context)
+- `sensor.defcon_home_lagezentrum_news_context` (optional RSS/Gemini context)
 - manual override select
 - refresh button
 
@@ -193,7 +193,7 @@ lagezentrum_rss_analyzed
 and stores the latest relevant item in:
 
 ```text
-sensor.lagezentrum_news_context
+sensor.defcon_home_lagezentrum_news_context
 ```
 
 Expected event fields include `relevant`, `importance`, `category`, `scope`,
