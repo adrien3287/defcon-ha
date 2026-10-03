@@ -3,7 +3,7 @@
   "config": {
     "step": {"user": {
       "title": "DEFCON Home Quellen",
-      "description": "Lokale deterministische Home-Assistant-Quellen konfigurieren. Kein GitHub-JSON und keine KI.",
+      "description": "Lokale deterministische Home-Assistant-Quellen konfigurieren. Die DEFCON-Engine bleibt lokal und KI-frei; optionale Kontext-Ereignisse werden getrennt verarbeitet.",
       "data": {
         "nina_entities": "NINA Warnentitäten",
         "dwd_current_entities": "DWD aktuelle Warnstufe",
