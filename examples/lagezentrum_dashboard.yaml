@@ -7,6 +7,7 @@ views:
     cards:
       - type: custom:defcon-ha-card
         entity: sensor.defcon_home_level
+        context_entity: sensor.defcon_home_context_recommended_defcon
         title: DEFCON Maison
         show_sources: false
 
