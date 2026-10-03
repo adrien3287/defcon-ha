@@ -1,5 +1,14 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.1
+
+- shows the advisory Context DEFCON directly on the main DEFCON card;
+- keeps the real deterministic DEFCON visually primary;
+- emphasizes the context pill when its recommendation is more severe;
+- clicking the context pill opens the advisory context entity;
+- dashboard binds `sensor.defcon_home_context_recommended_defcon` explicitly.
+
+
 ## 0.4.0
 
 Version 0.4 adds a persistent **contextual situation layer** alongside the
@@ -189,6 +198,7 @@ Unavailable source entities are reported separately as degraded monitoring and a
 ```yaml
 type: custom:defcon-ha-card
 entity: sensor.defcon_home_level
+context_entity: sensor.defcon_home_context_recommended_defcon
 title: DEFCON Maison
 show_sources: true
 ```
