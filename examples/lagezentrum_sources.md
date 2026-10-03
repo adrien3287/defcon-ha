@@ -1,4 +1,4 @@
-# Lagezentrum source plan (v0.4)
+# Lagezentrum source plan (v0.4.2)
 
 The context layer is intentionally broader than the deterministic DEFCON engine.
 These sources are consumed by Home Assistant Feedreader, classified by Gemini,
@@ -6,6 +6,16 @@ then sent to DEFCON Home through the `lagezentrum_rss_analyzed` event.
 
 The AI/context path is informational. It does **not** directly change the
 deterministic DEFCON level.
+
+## Automatic installation
+
+In DEFCON Home 0.4.2, press:
+
+`button.defcon_home_install_rss_sources`
+
+The integration creates every missing recommended Feedreader config entry via
+Home Assistant's config-flow API. Existing sources are skipped. The optional
+high-volume CERT-Bund security-advisory feed is not installed automatically.
 
 ## Tier 1 - Local / Hamburg
 
