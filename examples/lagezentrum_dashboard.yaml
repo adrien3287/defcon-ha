@@ -287,51 +287,73 @@ views:
     type: masonry
     cards:
       - type: entities
-        title: Informations analysées par Gemini
+        title: Contexte RSS / Gemini
         state_color: true
+        show_header_toggle: false
         entities:
           - entity: sensor.lagezentrum_news_context
-            name: Statut
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: importance
-            name: Importance
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: category
-            name: Catégorie
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: scope
-            name: Portée
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: title
-            name: Titre
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: summary_fr
-            name: Résumé
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: reason
-            name: Pertinence
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: protective_action
-            name: Consigne de protection
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: recommended_action
-            name: Action recommandée
-          - type: attribute
-            entity: sensor.lagezentrum_news_context
-            attribute: analyzed_at
-            name: Analysé à
+            name: Dernière information pertinente
+            icon: mdi:newspaper-variant-multiple
+
+      - type: markdown
+        title: Analyse
+        entity_id:
+          - sensor.lagezentrum_news_context
+        content: |
+          {% set e = 'sensor.lagezentrum_news_context' %}
+          {% set imp = state_attr(e, 'importance') | int(0) %}
+          {% set protective = state_attr(e, 'protective_action') | default(false, true) %}
+          {% set title = state_attr(e, 'title') | default('', true) %}
+          {% set summary = state_attr(e, 'summary_fr') | default('', true) %}
+          {% set reason = state_attr(e, 'reason') | default('', true) %}
+          {% set action = state_attr(e, 'recommended_action') | default('aucune', true) %}
+          {% set category = state_attr(e, 'category') | default('other', true) %}
+          {% set scope = state_attr(e, 'scope') | default('', true) %}
+          {% set link = state_attr(e, 'link') | default('', true) %}
+          {% set analyzed = state_attr(e, 'analyzed_at') | default('', true) %}
+
+          {% if states(e) == 'idle' %}
+          <ha-alert alert-type="info">Aucune information RSS pertinente analysée pour le moment.</ha-alert>
+          {% elif imp >= 3 %}
+          <ha-alert alert-type="error">
+          <b>IMPORTANT{% if protective %} — CONSIGNE DE PROTECTION{% endif %}</b>
+          </ha-alert>
+          {% elif imp == 2 %}
+          <ha-alert alert-type="warning"><b>À SURVEILLER</b></ha-alert>
+          {% else %}
+          <ha-alert alert-type="info"><b>INFORMATION</b></ha-alert>
+          {% endif %}
+
+          {% if title %}
+          ## {{ title }}
+
+          **Résumé :** {{ summary }}
+
+          **Catégorie :** {{ category }}  
+          **Portée :** {{ scope }}  
+          **Importance :** {{ imp }}/3  
+          **Consigne de protection :** {{ 'Oui' if protective else 'Non' }}
+
+          **Pourquoi c'est pertinent :**  
+          {{ reason }}
+
+          {% if action and action != 'aucune' %}
+          ### Action recommandée
+          {{ action }}
+          {% endif %}
+
+          {% if link %}
+          [Ouvrir l'article source]({{ link }})
+          {% endif %}
+
+          {% if analyzed %}
+          _Analyse : {{ analyzed }}_
+          {% endif %}
+          {% endif %}
 
       - type: markdown
         title: Principe
         content: >-
-          Le contexte RSS est analysé par Gemini pour filtrer et résumer les
-          informations pertinentes. Cette couche est informative et ne modifie
-          pas directement le niveau DEFCON.
+          Le contexte RSS est analysé par Gemini pour filtrer, traduire et
+          résumer les informations pertinentes. Cette couche reste informative :
+          elle ne modifie pas directement le niveau DEFCON.
