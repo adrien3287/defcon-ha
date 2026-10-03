@@ -301,6 +301,41 @@ views:
           - entity: sensor.defcon_home_lagezentrum_news_context
             name: Événement prioritaire
 
+      - type: entities
+        title: Sources RSS Lagezentrum
+        show_header_toggle: false
+        entities:
+          - entity: button.defcon_home_install_rss_sources
+            name: Installer / compléter les flux RSS
+
+      - type: markdown
+        title: État des sources RSS
+        entity_id:
+          - button.defcon_home_install_rss_sources
+        content: |
+          {% set e = 'button.defcon_home_install_rss_sources' %}
+          {% set total = state_attr(e, 'recommended_count') | int(0) %}
+          {% set configured = state_attr(e, 'configured_count') | int(0) %}
+          {% set missing = state_attr(e, 'missing_count') | int(0) %}
+          {% set failed = state_attr(e, 'failed') or [] %}
+
+          **Sources recommandées : {{ configured }}/{{ total }} configurées**
+
+          {% if missing == 0 %}
+          <ha-alert alert-type="success">Tous les flux RSS Lagezentrum recommandés sont installés.</ha-alert>
+          {% else %}
+          <ha-alert alert-type="warning">{{ missing }} flux RSS restent à installer. Appuie sur « Installer / compléter les flux RSS ».</ha-alert>
+          {% endif %}
+
+          {% if failed | length > 0 %}
+          **Échecs lors du dernier essai :**
+          {% for item in failed %}
+          - {{ item.name }} : {{ item.error }}
+          {% endfor %}
+          {% endif %}
+
+          Le flux CERT-Bund « Security Advisories » à fort volume reste volontairement exclu de l'installation automatique.
+
       - type: markdown
         title: Événements actifs
         entity_id:
