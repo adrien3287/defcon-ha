@@ -17,6 +17,8 @@ jobs:
           python-version: "3.13"
       - name: Compile Python
         run: python -m compileall -q custom_components/defcon_ha
+      - name: Validate frontend JavaScript
+        run: node --check custom_components/defcon_ha/frontend/defcon-ha-card.js
       - name: Validate JSON
         run: |
           python - <<'PY'
