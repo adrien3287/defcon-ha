@@ -10,7 +10,7 @@ class DefconHaCard extends HTMLElement {
     if (!config || !config.entity) {
       throw new Error("DEFCON Home card requires an entity");
     }
-    this._config = { title: "DEFCON Home", show_sources: true, ...config };
+    this._config = {\n      title: "DEFCON Home",\n      show_sources: true,\n      context_entity: "sensor.defcon_home_context_recommended_defcon",\n      ...config,\n    };
     this._render();
   }
 
@@ -31,7 +31,7 @@ class DefconHaCard extends HTMLElement {
     const entity = Object.keys(hass?.states || {}).find(
       (id) => id.startsWith("sensor.") && hass.states[id]?.attributes?.engine === "local_deterministic"
     );
-    return { entity: entity || "sensor.defcon_home_level" };
+    return {\n      entity: entity || "sensor.defcon_home_level",\n      context_entity: "sensor.defcon_home_context_recommended_defcon",\n    };
   }
 
   _lang() {
@@ -166,7 +166,7 @@ class DefconHaCard extends HTMLElement {
         .name { font-size: 18px; font-weight: 600; opacity: .95; }
         .summary { margin-top: 8px; font-size: 14px; line-height: 1.35; opacity: .96; }
         .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .pill { border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 4px 8px; font-size: 12px; }
+        .pill { border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 4px 8px; font-size: 12px; }\n        .pill.context { border-style: dashed; font-weight: 700; }\n        .pill.context.more-severe { background: rgba(255,255,255,.16); border-style: solid; }
         .body { padding: 14px 16px 16px; }
         .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .65; margin-bottom: 8px; }
         .reason { padding: 10px 0; border-top: 1px solid var(--divider-color); }
