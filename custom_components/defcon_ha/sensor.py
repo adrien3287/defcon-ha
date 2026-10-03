@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import RestoreSensor, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, EVENT_RSS_ANALYZED
@@ -180,7 +179,7 @@ class DefconSourceHealthSensor(_DefconBaseSensor):
 
 
 
-class LagezentrumNewsContextSensor(SensorEntity, RestoreEntity):
+class LagezentrumNewsContextSensor(RestoreSensor, SensorEntity):
     """Keep the latest relevant RSS article classified by the user's AI automation."""
 
     _attr_has_entity_name = False
@@ -215,9 +214,13 @@ class LagezentrumNewsContextSensor(SensorEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         """Restore the previous context and subscribe to analyzed RSS events."""
         await super().async_added_to_hass()
+
+        last_sensor_data = await self.async_get_last_sensor_data()
+        if last_sensor_data is not None and last_sensor_data.native_value is not None:
+            self._attr_native_value = last_sensor_data.native_value
+
         last_state = await self.async_get_last_state()
         if last_state is not None:
-            self._attr_native_value = last_state.state
             for key in self._attrs:
                 if key in last_state.attributes:
                     self._attrs[key] = last_state.attributes[key]
