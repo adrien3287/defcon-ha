@@ -291,16 +291,16 @@ views:
         state_color: true
         show_header_toggle: false
         entities:
-          - entity: sensor.lagezentrum_news_context
+          - entity: sensor.defcon_home_lagezentrum_news_context
             name: Dernière information pertinente
             icon: mdi:newspaper-variant-multiple
 
       - type: markdown
         title: Analyse
         entity_id:
-          - sensor.lagezentrum_news_context
+          - sensor.defcon_home_lagezentrum_news_context
         content: |
-          {% set e = 'sensor.lagezentrum_news_context' %}
+          {% set e = 'sensor.defcon_home_lagezentrum_news_context' %}
           {% set imp = state_attr(e, 'importance') | int(0) %}
           {% set protective = state_attr(e, 'protective_action') | default(false, true) %}
           {% set title = state_attr(e, 'title') | default('', true) %}
