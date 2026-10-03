@@ -19,6 +19,17 @@ jobs:
         run: python -m compileall -q custom_components/defcon_ha
       - name: Validate frontend JavaScript
         run: node --check custom_components/defcon_ha/frontend/defcon-ha-card.js
+      - name: Install YAML validator
+        run: python -m pip install --disable-pip-version-check --quiet PyYAML
+      - name: Validate example YAML
+        run: |
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+          for path in Path("examples").glob("*.yaml"):
+              yaml.safe_load(path.read_text(encoding="utf-8"))
+              print(f"OK {path}")
+          PY
       - name: Validate JSON
         run: |
           python - <<'PY'
