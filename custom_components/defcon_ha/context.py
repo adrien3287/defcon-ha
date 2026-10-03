@@ -8,7 +8,7 @@ reports and exposes an indicative (non-authoritative) DEFCON recommendation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 import hashlib
 import logging
 import re
@@ -116,7 +116,7 @@ def _parse_dt(value: Any) -> datetime | None:
     if parsed is None:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=dt_util.UTC)
+        parsed = parsed.replace(tzinfo=UTC)
     return dt_util.as_utc(parsed)
 
 
