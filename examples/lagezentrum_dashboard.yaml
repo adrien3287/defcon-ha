@@ -318,6 +318,14 @@ views:
             name: Pertinence
           - type: attribute
             entity: sensor.lagezentrum_news_context
+            attribute: protective_action
+            name: Consigne de protection
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
+            attribute: recommended_action
+            name: Action recommandée
+          - type: attribute
+            entity: sensor.lagezentrum_news_context
             attribute: analyzed_at
             name: Analysé à
 
