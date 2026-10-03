@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -154,3 +154,106 @@ CONTEXT_TTL_HOURS = {
     "geopolitical": 36,
     "other": 12,
 }
+
+
+# Curated Feedreader sources for the optional AI-assisted context layer.
+# These are installed only when the user presses the bulk-install button.
+RSS_RECOMMENDED_SOURCES = [
+    {
+        "name": "NDR Hamburg",
+        "url": "https://www.ndr.de/nachrichten/hamburg/index~rss2.xml",
+        "tier": "local",
+        "source_class": "public_media",
+    },
+    {
+        "name": "Polizei Hamburg",
+        "url": "https://www.presseportal.de/rss/dienststelle_6337.rss2",
+        "tier": "local",
+        "source_class": "official",
+    },
+    {
+        "name": "Feuerwehr Hamburg",
+        "url": "https://www.presseportal.de/rss/dienststelle_82522.rss2",
+        "tier": "local",
+        "source_class": "official",
+    },
+    {
+        "name": "Bundespolizei Hamburg",
+        "url": "https://www.presseportal.de/rss/dienststelle_70254.rss2",
+        "tier": "local",
+        "source_class": "official",
+    },
+    {
+        "name": "Tagesschau Hamburg",
+        "url": "https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml",
+        "tier": "local",
+        "source_class": "public_media",
+    },
+    {
+        "name": "Tagesschau Inland",
+        "url": "https://www.tagesschau.de/inland/index~rss2.xml",
+        "tier": "national",
+        "source_class": "public_media",
+    },
+    {
+        "name": "BBK",
+        "url": "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130",
+        "tier": "national",
+        "source_class": "official",
+        "aliases": [
+            "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml"
+        ],
+    },
+    {
+        "name": "Bundesnetzagentur Presse",
+        "url": "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324",
+        "tier": "national",
+        "source_class": "official",
+        "aliases": [
+            "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml"
+        ],
+    },
+    {
+        "name": "Bundesnetzagentur Gas",
+        "url": "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml?nn=654666",
+        "tier": "national",
+        "source_class": "official",
+        "aliases": [
+            "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml"
+        ],
+    },
+    {
+        "name": "BSI BürgerCERT",
+        "url": "https://wid.cert-bund.de/content/public/buergercert/rss",
+        "tier": "national",
+        "source_class": "official",
+    },
+    {
+        "name": "Tagesschau Ausland",
+        "url": "https://www.tagesschau.de/ausland/index~rss2.xml",
+        "tier": "strategic",
+        "source_class": "public_media",
+    },
+    {
+        "name": "Tagesschau Europa",
+        "url": "https://www.tagesschau.de/ausland/europa/index~rss2.xml",
+        "tier": "strategic",
+        "source_class": "public_media",
+    },
+    {
+        "name": "Tagesschau Wirtschaft",
+        "url": "https://www.tagesschau.de/wirtschaft/index~rss2.xml",
+        "tier": "strategic",
+        "source_class": "public_media",
+    },
+]
+
+# Deliberately excluded from automatic installation because it is very noisy.
+RSS_OPTIONAL_HIGH_VOLUME_SOURCES = [
+    {
+        "name": "CERT-Bund Security Advisories",
+        "url": "https://wid.cert-bund.de/content/public/securityAdvisory/rss",
+        "tier": "national",
+        "source_class": "official",
+    },
+]
