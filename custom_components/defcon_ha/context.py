@@ -199,10 +199,7 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
 
     @callback
     def _handle_event(self, event: Event) -> None:
-        self.hass.async_create_task(
-            self._async_ingest_event(event),
-            "DEFCON Home contextual event",
-        )
+        self.hass.async_create_task(self._async_ingest_event(event))
 
     async def _async_ingest_event(self, event: Event) -> None:
         if not self._loaded:
