@@ -283,40 +283,42 @@ views:
 
   - title: Contexte
     path: contexte
-    icon: mdi:newspaper-variant-multiple
+    icon: mdi:radar
     type: masonry
     cards:
       - type: entities
-        title: Contexte RSS / Gemini
+        title: Synthèse contexte
         state_color: true
         show_header_toggle: false
         entities:
+          - entity: sensor.defcon_home_context_status
+            name: Situation contextuelle
+          - entity: sensor.defcon_home_context_active_events
+            name: Événements actifs
+          - entity: sensor.defcon_home_context_recommended_defcon
+            name: DEFCON recommandé (indicatif)
           - entity: sensor.defcon_home_lagezentrum_news_context
-            name: Dernière information pertinente
-            icon: mdi:newspaper-variant-multiple
+            name: Événement prioritaire
 
       - type: markdown
-        title: Analyse
+        title: Événements actifs
         entity_id:
           - sensor.defcon_home_lagezentrum_news_context
         content: |
           {% set e = 'sensor.defcon_home_lagezentrum_news_context' %}
-          {% set imp = state_attr(e, 'importance') | int(0) %}
-          {% set protective = state_attr(e, 'protective_action') | default(false, true) %}
-          {% set title = state_attr(e, 'title') | default('', true) %}
-          {% set summary = state_attr(e, 'summary_fr') | default('', true) %}
-          {% set reason = state_attr(e, 'reason') | default('', true) %}
-          {% set action = state_attr(e, 'recommended_action') | default('aucune', true) %}
-          {% set category = state_attr(e, 'category') | default('other', true) %}
-          {% set scope = state_attr(e, 'scope') | default('', true) %}
-          {% set link = state_attr(e, 'link') | default('', true) %}
-          {% set analyzed = state_attr(e, 'analyzed_at') | default('', true) %}
+          {% set events = state_attr(e, 'active_events') or [] %}
 
-          {% if states(e) == 'idle' %}
-          <ha-alert alert-type="info">Aucune information RSS pertinente analysée pour le moment.</ha-alert>
-          {% elif imp >= 3 %}
+          {% if events | length == 0 %}
+          <ha-alert alert-type="success">
+          Aucun événement contextuel actif.
+          </ha-alert>
+          {% endif %}
+
+          {% for item in events %}
+          {% set imp = item.importance | int(0) %}
+          {% if imp >= 3 %}
           <ha-alert alert-type="error">
-          <b>IMPORTANT{% if protective %} — CONSIGNE DE PROTECTION{% endif %}</b>
+          <b>IMPORTANT{% if item.protective_action %} — CONSIGNE DE PROTECTION{% endif %}</b>
           </ha-alert>
           {% elif imp == 2 %}
           <ha-alert alert-type="warning"><b>À SURVEILLER</b></ha-alert>
@@ -324,36 +326,74 @@ views:
           <ha-alert alert-type="info"><b>INFORMATION</b></ha-alert>
           {% endif %}
 
-          {% if title %}
-          ## {{ title }}
+          ### {{ item.title }}
 
-          **Résumé :** {{ summary }}
+          **{{ item.category }} · {{ item.scope }} · confiance {{ item.confidence_score }}%**  
+          **Pertinence Marmstorf :** {{ item.direct_relevance }}  
+          **Zone :** {{ item.affected_area if item.affected_area else 'non précisée' }}  
+          **Sources :** {{ item.corroboration_count }}  
+          **Valable jusqu’au :** {{ item.expires_at }}
 
-          **Catégorie :** {{ category }}  
-          **Portée :** {{ scope }}  
-          **Importance :** {{ imp }}/3  
-          **Consigne de protection :** {{ 'Oui' if protective else 'Non' }}
+          {{ item.summary_fr }}
 
-          **Pourquoi c'est pertinent :**  
-          {{ reason }}
-
-          {% if action and action != 'aucune' %}
-          ### Action recommandée
-          {{ action }}
+          {% if item.reason %}
+          **Pourquoi c’est pertinent :** {{ item.reason }}
           {% endif %}
 
-          {% if link %}
-          [Ouvrir l'article source]({{ link }})
+          {% if item.recommended_action and item.recommended_action != 'aucune' %}
+          **Action recommandée :** {{ item.recommended_action }}
           {% endif %}
 
-          {% if analyzed %}
-          _Analyse : {{ analyzed }}_
+          {% if item.link %}
+          [Ouvrir la source]({{ item.link }})
           {% endif %}
+
+          ---
+          {% endfor %}
+
+      - type: markdown
+        title: Événements à confirmer / périmés
+        entity_id:
+          - sensor.defcon_home_lagezentrum_news_context
+        content: |
+          {% set events = state_attr('sensor.defcon_home_lagezentrum_news_context', 'stale_events') or [] %}
+          {% if events | length == 0 %}
+          Aucun événement stale.
+          {% else %}
+          Ces événements ont dépassé leur fenêtre de validité mais restent visibles
+          pendant la période de grâce avant archivage.
+
+          {% for item in events %}
+          **{{ item.title }}**  
+          {{ item.category }} · importance {{ item.importance }}/3 · expiré {{ item.expires_at }}
+          {% if item.link %} · [source]({{ item.link }}){% endif %}
+
+          {% endfor %}
+          {% endif %}
+
+      - type: markdown
+        title: Historique récent
+        entity_id:
+          - sensor.defcon_home_lagezentrum_news_context
+        content: |
+          {% set events = state_attr('sensor.defcon_home_lagezentrum_news_context', 'recent_events') or [] %}
+          {% if events | length == 0 %}
+          Aucun événement archivé.
+          {% else %}
+          {% for item in events[:6] %}
+          **{{ item.title }}**  
+          {{ item.category }} · {{ item.status }} · importance {{ item.importance }}/3  
+          {% if item.resolved_at %}Clôturé : {{ item.resolved_at }}{% endif %}
+          {% if item.resolution_reason %} · {{ item.resolution_reason }}{% endif %}
+
+          {% endfor %}
           {% endif %}
 
       - type: markdown
         title: Principe
         content: >-
-          Le contexte RSS est analysé par Gemini pour filtrer, traduire et
-          résumer les informations pertinentes. Cette couche reste informative :
-          elle ne modifie pas directement le niveau DEFCON.
+          Les flux locaux, nationaux et stratégiques sont filtrés et résumés par
+          Gemini. Plusieurs événements peuvent rester actifs simultanément, avec
+          expiration, corrélation et historique. Le DEFCON recommandé par cette
+          couche est uniquement indicatif : le moteur DEFCON déterministe reste
+          indépendant et n’est jamais modifié directement par l’IA.
