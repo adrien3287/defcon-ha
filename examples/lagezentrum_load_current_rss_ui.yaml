@@ -1,0 +1,93 @@
+# DEFCON Home - one-shot current RSS seeding script
+#
+# Paste this complete YAML into:
+# Settings > Automations & scenes > Scripts > Create script > Edit in YAML
+#
+# What it does:
+# 1) refreshes every Feedreader entity now;
+# 2) reads the latest item currently exposed by each Feedreader event entity;
+# 3) re-fires that item as a normal "feedreader" bus event;
+# 4) the existing Lagezentrum Gemini automation processes it normally.
+#
+# Only the 13 curated DEFCON Home feeds are replayed.
+
+alias: "Lagezentrum - Charger les RSS actuels"
+description: >-
+  Rafraîchit les 13 Feedreader Lagezentrum puis rejoue le dernier article
+  actuellement exposé par chacun afin de remplir immédiatement le contexte.
+mode: single
+
+sequence:
+  - variables:
+      feed_entities: "{{ integration_entities('feedreader') }}"
+      curated_urls:
+        - "https://www.ndr.de/nachrichten/hamburg/index~rss2.xml"
+        - "https://www.presseportal.de/rss/dienststelle_6337.rss2"
+        - "https://www.presseportal.de/rss/dienststelle_82522.rss2"
+        - "https://www.presseportal.de/rss/dienststelle_70254.rss2"
+        - "https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml"
+        - "https://www.tagesschau.de/inland/index~rss2.xml"
+        - "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130"
+        - "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml"
+        - "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324"
+        - "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml"
+        - "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml?nn=654666"
+        - "https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml"
+        - "https://wid.cert-bund.de/content/public/buergercert/rss"
+        - "https://www.tagesschau.de/ausland/index~rss2.xml"
+        - "https://www.tagesschau.de/ausland/europa/index~rss2.xml"
+        - "https://www.tagesschau.de/wirtschaft/index~rss2.xml"
+
+  # Force an immediate fetch from every configured Feedreader source.
+  - repeat:
+      for_each: "{{ feed_entities }}"
+      sequence:
+        - action: homeassistant.update_entity
+          target:
+            entity_id: "{{ repeat.item }}"
+        - delay:
+            milliseconds: 250
+
+  # Give event entities a moment to expose their latest item.
+  - delay:
+      seconds: 2
+
+  # Replay the latest item of each curated feed through the normal pipeline.
+  - repeat:
+      for_each: "{{ feed_entities }}"
+      sequence:
+        - variables:
+            feed_entity: "{{ repeat.item }}"
+            feed_url: >-
+              {{ device_attr(feed_entity, 'configuration_url')
+                 | default('', true) }}
+            title: >-
+              {{ state_attr(feed_entity, 'title')
+                 | default('', true) }}
+            description: >-
+              {{ state_attr(feed_entity, 'description')
+                 | default('', true) }}
+            content: >-
+              {{ state_attr(feed_entity, 'content')
+                 | default('', true) }}
+            link: >-
+              {{ state_attr(feed_entity, 'link')
+                 | default('', true) }}
+
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {{ feed_url in curated_urls and (title | trim | length) > 0 }}
+              sequence:
+                - event: feedreader
+                  event_data:
+                    title: "{{ title }}"
+                    description: "{{ description }}"
+                    content: "{{ content }}"
+                    link: "{{ link }}"
+                    feed_url: "{{ feed_url }}"
+
+                # Keep the burst gentle even though the Gemini automation is queued.
+                - delay:
+                    seconds: 1
