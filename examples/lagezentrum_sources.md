@@ -30,7 +30,7 @@ local infrastructure failure and other events with a short path to Marmstorf.
 - Tagesschau Inland  
   `https://www.tagesschau.de/inland/index~rss2.xml`
 - BBK current news  
-  `https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml`
+  `https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130`
 - Bundesnetzagentur press releases  
   `https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324`
 - Bundesnetzagentur - current gas supply  
