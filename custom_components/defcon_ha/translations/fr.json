@@ -3,7 +3,7 @@
   "config": {
     "step": {"user": {
       "title": "Sources DEFCON Home",
-      "description": "Configure les sources Home Assistant du moteur déterministe local. Aucun JSON GitHub ni IA n'est utilisé.",
+      "description": "Configure les sources Home Assistant du moteur déterministe local. Le DEFCON reste local et sans IA ; les événements de contexte optionnels sont traités séparément.",
       "data": {
         "nina_entities": "Entités d'alerte NINA",
         "dwd_current_entities": "Niveau DWD actuel",
