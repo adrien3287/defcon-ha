@@ -54,7 +54,7 @@ views:
 
       - type: map
         title: Situation externe
-        auto_fit: true
+        show_all: false
         entities:
           - geo_location.situation_externe_hamburg_neugraben_hamburg_dehh050_hamburg_neugraben
           - geo_location.situation_externe_hamburg_wilhelmsburg_hamburg_dehh059_hamburg_wilhelmsburg
@@ -62,6 +62,11 @@ views:
           - geo_location.situation_externe_rosengarten_21224_033530292_rosengarten
           - geo_location.situation_externe_hamburg_wilhelmsburg_21109_020000006_hamburg_wilhelmsburg
           - geo_location.situation_externe_stelle_harburg_21435_033530321_stelle_harburg
+        auto_fit: true
+        cluster: false
+        theme_mode: auto
+        card_mod:
+          style: 'ha-card { --ha-marker-size: 24px; }'
 
       - type: entities
         title: Maison
