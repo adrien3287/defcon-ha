@@ -86,6 +86,26 @@ automation:
                | default(trigger.event.data.created
                | default(''))) }}
 
+      # Only process the curated Lagezentrum feeds. Other Feedreader instances
+      # in Home Assistant are ignored and do not consume Gemini calls.
+      - condition: template
+        value_template: >-
+          {{ feed_url in [
+            'https://www.ndr.de/nachrichten/hamburg/index~rss2.xml',
+            'https://www.presseportal.de/rss/dienststelle_6337.rss2',
+            'https://www.presseportal.de/rss/dienststelle_82522.rss2',
+            'https://www.presseportal.de/rss/dienststelle_70254.rss2',
+            'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
+            'https://www.tagesschau.de/inland/index~rss2.xml',
+            'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130',
+            'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_Pressemitteilungen.xml?nn=265324',
+            'https://www.bundesnetzagentur.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed_GAS.xml?nn=654666',
+            'https://wid.cert-bund.de/content/public/buergercert/rss',
+            'https://www.tagesschau.de/ausland/index~rss2.xml',
+            'https://www.tagesschau.de/ausland/europa/index~rss2.xml',
+            'https://www.tagesschau.de/wirtschaft/index~rss2.xml'
+          ] }}
+
       - action: ai_task.generate_data
         data:
           entity_id: ai_task.google_ai_task
