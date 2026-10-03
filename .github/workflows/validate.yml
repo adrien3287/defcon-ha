@@ -3,6 +3,7 @@ name: Validate DEFCON Home
 on:
   push:
     branches:
+      - main
       - v0.4.0-context-engine
   pull_request:
 
