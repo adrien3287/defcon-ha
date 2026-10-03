@@ -1,5 +1,13 @@
 # DEFCON Home for Home Assistant
 
+## 0.3.2
+
+- adds an optional event-driven RSS/Gemini context sensor;
+- listens for `lagezentrum_rss_analyzed` and stores the latest relevant item;
+- restores the latest context after Home Assistant restart;
+- context remains informational and never changes DEFCON directly;
+- adds a ready-to-use Feedreader → Gemini automation example and dashboard context view.
+
 ## 0.3.1
 
 - corrected fire input mapping: input 0 = smoke, input 1 = heat;
@@ -147,6 +155,7 @@ Unavailable source entities are reported separately as degraded monitoring and a
 - `sensor.defcon_home_external_level`
 - `sensor.defcon_home_infrastructure_level`
 - `sensor.defcon_home_source_health`
+- `sensor.lagezentrum_news_context` (optional RSS/Gemini context)
 - manual override select
 - refresh button
 
@@ -172,6 +181,28 @@ defcon_ha_level_changed
 ```
 
 with the old/new level, external level, infrastructure level, summary and active reasons.
+
+## Optional RSS / Gemini context
+
+The integration can listen for the Home Assistant event:
+
+```text
+lagezentrum_rss_analyzed
+```
+
+and stores the latest relevant item in:
+
+```text
+sensor.lagezentrum_news_context
+```
+
+Expected event fields include `relevant`, `importance`, `category`, `scope`,
+`protective_action`, `summary_fr`, `reason`, `recommended_action`,
+`title`, `link` and `feed_url`.
+
+See `examples/lagezentrum_rss_context.yaml` for a Feedreader → Google AI Task
+automation. The AI context layer is deliberately separate from the deterministic
+DEFCON calculation.
 
 ## Resilience
 
