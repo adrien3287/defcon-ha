@@ -369,11 +369,17 @@ views:
 
           ### {{ item.title }}
 
+          {% if item.original_title and item.original_title != item.title %}
+          *Titre source : {{ item.original_title }}*
+          {% endif %}
+
           **{{ item.category }} · {{ item.scope }} · confiance {{ item.confidence_score }}%**  
           **Pertinence Marmstorf :** {{ item.direct_relevance }}  
           **Zone :** {{ item.affected_area if item.affected_area else 'non précisée' }}  
           **Sources :** {{ item.corroboration_count }}  
-          {% if item.event_start_at %}
+          {% if item.event_timing_text %}
+          **Quand :** {{ item.event_timing_text }}  
+          {% elif item.event_start_at %}
           **Date événement :** {{ item.event_start_at }}  
           {% endif %}
           **Valable jusqu’au :** {{ item.expires_at }}
@@ -389,7 +395,9 @@ views:
           {% endif %}
 
           {% if item.link %}
-          [Ouvrir la source]({{ item.link }})
+          [Ouvrir l’article source]({{ item.link }})
+          {% elif item.feed_url %}
+          [Ouvrir le flux source]({{ item.feed_url }}) *(lien article absent)*
           {% endif %}
 
           ---
