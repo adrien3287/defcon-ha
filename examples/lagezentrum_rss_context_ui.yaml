@@ -5,7 +5,7 @@
 # This is the same pipeline as lagezentrum_rss_context.yaml but without the
 # top-level automation: wrapper, so it can be pasted directly into the UI.
 
-alias: "Lagezentrum - Analyse RSS Gemini v0.4.3"
+alias: "Lagezentrum - Analyse RSS Gemini v0.4.4"
 id: lagezentrum_analyse_rss_gemini_v04
 mode: queued
 max: 50
@@ -106,7 +106,7 @@ actions:
   - action: ai_task.generate_data
     data:
       entity_id: ai_task.google_ai_task
-      task_name: "Lagezentrum RSS v0.4.3"
+      task_name: "Lagezentrum RSS v0.4.4"
       instructions: >-
         Tu analyses une information pour un centre de situation domestique
         situé à Hamburg-Marmstorf.
@@ -131,6 +131,24 @@ actions:
 
         Date publiée:
         {{ published_at }}
+
+        Heure actuelle Home Assistant:
+        {{ now().isoformat() }}
+
+        FIDÉLITÉ DU CONTENU
+        - title_fr doit être une traduction française fidèle et naturelle du
+          titre original. Conserve les noms propres, lieux, dates, heures,
+          numéros et termes techniques nécessaires. N'ajoute aucun fait.
+        - summary_fr doit conserver TOUTES les dates, heures, périodes et
+          fenêtres de fermeture ayant une importance opérationnelle. Ne
+          transforme jamais "8:40-10:45" en une formulation vague.
+        - event_timing_text doit reprendre en français les dates/heures
+          opérationnelles explicitement présentes dans l'article, de manière
+          compacte. Exemple: "3 octobre 2026 — fermetures 08:40-10:45,
+          11:40-13:45 et 14:40-16:45". Si aucune information temporelle
+          opérationnelle n'est présente, renvoie une chaîne vide.
+        - Le lien de l'article est fourni séparément par le système. Ne
+          l'invente pas et ne le remplace pas par un autre lien.
 
         OBJECTIF
         Détermine uniquement l'intérêt opérationnel de cet article pour une
@@ -188,28 +206,35 @@ actions:
           rétablissement du service.
 
         DATE ET VALIDITÉ DE L'ÉVÉNEMENT
-        Si le texte mentionne explicitement une date ou heure FUTURE pour
-        l'événement (manifestation, fermeture, exercice, grève, travaux,
-        échéance, perturbation programmée, etc.), renseigne event_start_at et
-        valid_until en ISO 8601 avec fuseau Europe/Berlin.
+        Si le texte mentionne explicitement une date ou heure pour l'événement
+        (manifestation, fermeture, exercice, grève, travaux, échéance,
+        perturbation programmée, etc.), renseigne event_start_at et
+        valid_until en ISO 8601 avec fuseau Europe/Berlin, même si cette date
+        est déjà passée au moment de l'analyse.
 
         - event_start_at = début explicitement annoncé.
         - valid_until = fin explicitement annoncée.
-        - Si seule une date de début est donnée sans heure ni fin, utilise
-          23:59:59 de ce même jour comme valid_until.
+        - Si seule une date est donnée sans heure ni fin, utilise 23:59:59 de
+          ce même jour comme valid_until.
         - Si une heure de début est donnée mais aucune heure de fin, utilise
           23:59:59 de ce même jour comme valid_until.
+        - Si plusieurs créneaux sont donnés le même jour, event_start_at est le
+          début du premier créneau et valid_until la fin du dernier créneau.
         - Si une période est donnée, utilise la fin de la période.
+        - Résous "aujourd'hui", "demain", etc. par rapport à la date de
+          publication lorsqu'elle est disponible; sinon utilise l'heure
+          actuelle Home Assistant fournie ci-dessus.
         - Une date comme "7 octobre" peut prendre l'année cohérente avec la
           date de publication fournie, mais n'invente jamais un autre jour.
-        - Si aucune date future explicite n'est présente, renvoie une chaîne
-          vide pour event_start_at et valid_until.
-        - Ne prolonge pas artificiellement un événement déjà passé.
+        - Si aucune date explicite n'est présente, renvoie une chaîne vide pour
+          event_start_at et valid_until.
 
         Cette validité temporelle est importante: un article publié le
         4 octobre annonçant une manifestation le 7 octobre doit rester actif
         au moins jusqu'à la fin du 7 octobre, et non expirer après le TTL
-        générique de la catégorie.
+        générique de la catégorie. Inversement, un événement explicitement
+        terminé la veille ne doit pas redevenir actif simplement parce que
+        l'article est rejoué.
 
         EVENT_KEY
         Génère un identifiant court, stable et descriptif de l'incident,
@@ -240,6 +265,12 @@ actions:
         Résume en français en maximum deux phrases.
 
       structure:
+        title_fr:
+          description: "Titre traduit fidèlement en français, sans perte de dates/heures"
+          required: true
+          selector:
+            text:
+
         relevant:
           description: "Pertinent pour le Lagezentrum"
           required: true
@@ -308,6 +339,12 @@ actions:
           selector:
             text:
 
+        event_timing_text:
+          description: "Dates et heures opérationnelles explicites, reformulées fidèlement en français"
+          required: true
+          selector:
+            text:
+
         analysis_confidence:
           description: "Confiance dans la classification, de 0 à 100"
           required: true
@@ -338,7 +375,8 @@ actions:
 
   - event: lagezentrum_rss_analyzed
     event_data:
-      title: "{{ trigger.event.data.title | default('') }}"
+      original_title: "{{ trigger.event.data.title | default('') }}"
+      title: "{{ rss_result.data.title_fr | default(trigger.event.data.title | default('')) }}"
       link: "{{ trigger.event.data.link | default('') }}"
       feed_url: "{{ feed_url }}"
       published_at: "{{ published_at }}"
@@ -356,6 +394,7 @@ actions:
       event_key: "{{ rss_result.data.event_key | default('') }}"
       event_start_at: "{{ rss_result.data.event_start_at | default('') }}"
       valid_until: "{{ rss_result.data.valid_until | default('') }}"
+      event_timing_text: "{{ rss_result.data.event_timing_text | default('') }}"
       analysis_confidence: "{{ rss_result.data.analysis_confidence | default(75) }}"
       summary_fr: "{{ rss_result.data.summary_fr | default('') }}"
       reason: "{{ rss_result.data.reason | default('') }}"
