@@ -1,5 +1,18 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.3
+
+- Gemini now extracts explicit future event dates as `event_start_at` and `valid_until`;
+- scheduled events remain active until their explicit end/date instead of expiring only from the generic category TTL;
+- if only a future calendar date is given, validity defaults to 23:59:59 on that date;
+- events without an explicit future date continue to use the existing category TTL;
+- the context sensor exposes `event_start_at`, `valid_until` and `validity_source`;
+- the dashboard displays the explicit event date when available.
+
+Example: an article published on 4 October about a demonstration on 7 October can
+remain active through 7 October instead of expiring after the 12-hour security TTL.
+
+
 ## 0.4.2
 
 - adds `button.defcon_home_install_rss_sources` for one-click bulk installation of the curated Feedreader set;
@@ -269,13 +282,16 @@ Each event carries, among other fields:
 - combined contextual confidence;
 - source/corroboration count;
 - first/last seen timestamps and expiry;
+- optional explicit `event_start_at` / `valid_until` for scheduled events;
 - `new`, `update` or `resolved` lifecycle;
 - French summary, relevance explanation and recommended action.
 
 An explicit all-clear, service restoration or warning cancellation can close an
 event immediately with `lifecycle=resolved`.
 
-Without an explicit resolution, events age automatically:
+Without an explicit resolution, events age automatically. When Gemini extracts
+an explicit future event validity date, that date takes precedence over the
+generic category TTL. Otherwise the category TTL below is used:
 
 | Category | Active validity |
 | --- | ---: |
