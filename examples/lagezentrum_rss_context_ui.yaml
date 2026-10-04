@@ -1,4 +1,4 @@
-# DEFCON Home v0.4 - UI-ready Home Assistant automation
+# DEFCON Home v0.4.3 - UI-ready Home Assistant automation
 # Paste the complete YAML below into:
 # Settings > Automations & scenes > Create automation > Edit in YAML
 #
@@ -6,7 +6,7 @@
 # top-level automation: wrapper, so it can be pasted directly into the UI.
 
 alias: "Lagezentrum - Analyse RSS Gemini v0.4.3"
-id: lagezentrum_analyse_rss_gemini_v043
+id: lagezentrum_analyse_rss_gemini_v04
 mode: queued
 max: 50
 
