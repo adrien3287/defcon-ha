@@ -1,5 +1,16 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.4
+
+- Gemini now returns a French `title_fr`; the context dashboard shows the French title and retains the source-language title;
+- operational dates, hours and closure windows must be preserved in `summary_fr` and in `event_timing_text`;
+- relative dates are resolved from the publication timestamp when available, otherwise from Home Assistant current time;
+- explicit event dates are extracted even when already past, so replaying an old scheduled article cannot restart it for a fresh category TTL;
+- the context engine preserves `original_title`, `event_timing_text` and an existing article link across correlated updates;
+- the dashboard shows the article URL when present and clearly labels the RSS-feed fallback when an article URL is absent;
+- the 2026-10-04 seed snapshot restores source links and detailed timing for the Köhlbrandbrückenlauf and 7 October demonstration items.
+
+
 ## 0.4.3
 
 - Gemini now extracts explicit future event dates as `event_start_at` and `valid_until`;
@@ -283,6 +294,7 @@ Each event carries, among other fields:
 - source/corroboration count;
 - first/last seen timestamps and expiry;
 - optional explicit `event_start_at` / `valid_until` for scheduled events;
+- French display title, source-language title and compact operational timing text;
 - `new`, `update` or `resolved` lifecycle;
 - French summary, relevance explanation and recommended action.
 
@@ -290,8 +302,8 @@ An explicit all-clear, service restoration or warning cancellation can close an
 event immediately with `lifecycle=resolved`.
 
 Without an explicit resolution, events age automatically. When Gemini extracts
-an explicit future event validity date, that date takes precedence over the
-generic category TTL. Otherwise the category TTL below is used:
+an explicit event validity date, that date takes precedence over the generic
+category TTL, including a past date when an old article is replayed. Otherwise the category TTL below is used:
 
 | Category | Active validity |
 | --- | ---: |
