@@ -80,6 +80,8 @@ views:
             name: Victron - perte réseau
           - entity: sensor.victron_over_mqtt_battery_soc
             name: Batterie
+          - entity: sensor.victron_over_mqtt_autonomie_charge_battery_dyness_full_empty
+            name: Autonomie restante
           - entity: binary_sensor.b0_19_21_50_7d_5b_port_1_internet_link
             name: Telekom
           - entity: binary_sensor.b0_19_21_50_7d_5b_port_2_internet_link
