@@ -1,4 +1,4 @@
-# DEFCON Home v0.4 - Feedreader -> Gemini context pipeline
+# DEFCON Home v0.4.3 - Feedreader -> Gemini context pipeline
 #
 # Prerequisite:
 #   ai_task.google_ai_task
@@ -18,7 +18,7 @@
 
 automation:
   - alias: "Lagezentrum - Analyse RSS Gemini v0.4.3"
-    id: lagezentrum_analyse_rss_gemini_v043
+    id: lagezentrum_analyse_rss_gemini_v04
     mode: queued
     max: 50
 
