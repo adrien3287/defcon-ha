@@ -1,5 +1,16 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.5
+
+- the 2026-10-04 RSS seed snapshot now contains verified direct article URLs for 104 of 107 replayed items;
+- direct links were resolved for NDR, Presseportal/Polizei/Feuerwehr/Bundespolizei, Tagesschau, BBK, Bundesnetzagentur and BSI/BürgerCERT items;
+- unresolved items deliberately keep an empty link instead of using a guessed or generic source URL;
+- replayed items therefore keep their real article URL through Feedreader → Gemini → context → dashboard;
+- deterministic DEFCON rules are unchanged.
+
+The three intentionally unresolved seed items are the Bundespolizei Hauptbahnhof bag item, the Hamburg/Bahn punctuality item, and one generic energy/inflation headline whose exact source article could not be resolved confidently.
+
+
 ## 0.4.4
 
 - Gemini now returns a French `title_fr`; the context dashboard shows the French title and retains the source-language title;
