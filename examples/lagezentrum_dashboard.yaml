@@ -373,6 +373,9 @@ views:
           **Pertinence Marmstorf :** {{ item.direct_relevance }}  
           **Zone :** {{ item.affected_area if item.affected_area else 'non précisée' }}  
           **Sources :** {{ item.corroboration_count }}  
+          {% if item.event_start_at %}
+          **Date événement :** {{ item.event_start_at }}  
+          {% endif %}
           **Valable jusqu’au :** {{ item.expires_at }}
 
           {{ item.summary_fr }}
