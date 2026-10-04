@@ -18,7 +18,7 @@
 
 automation:
   - alias: "Lagezentrum - Analyse RSS Gemini v0.4.4"
-    id: lagezentrum_analyse_rss_gemini_v044
+    id: lagezentrum_analyse_rss_gemini_v04
     mode: queued
     max: 50
 
