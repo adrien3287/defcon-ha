@@ -199,6 +199,30 @@ automation:
               l'événement, la levée d'une alerte, une Entwarnung ou le
               rétablissement du service.
 
+            DATE ET VALIDITÉ DE L'ÉVÉNEMENT
+            Si le texte mentionne explicitement une date ou heure FUTURE pour
+            l'événement (manifestation, fermeture, exercice, grève, travaux,
+            échéance, perturbation programmée, etc.), renseigne event_start_at et
+            valid_until en ISO 8601 avec fuseau Europe/Berlin.
+
+            - event_start_at = début explicitement annoncé.
+            - valid_until = fin explicitement annoncée.
+            - Si seule une date de début est donnée sans heure ni fin, utilise
+              23:59:59 de ce même jour comme valid_until.
+            - Si une heure de début est donnée mais aucune heure de fin, utilise
+              23:59:59 de ce même jour comme valid_until.
+            - Si une période est donnée, utilise la fin de la période.
+            - Une date comme "7 octobre" peut prendre l'année cohérente avec la
+              date de publication fournie, mais n'invente jamais un autre jour.
+            - Si aucune date future explicite n'est présente, renvoie une chaîne
+              vide pour event_start_at et valid_until.
+            - Ne prolonge pas artificiellement un événement déjà passé.
+
+            Cette validité temporelle est importante: un article publié le
+            4 octobre annonçant une manifestation le 7 octobre doit rester actif
+            au moins jusqu'à la fin du 7 octobre, et non expirer après le TTL
+            générique de la catégorie.
+
             EVENT_KEY
             Génère un identifiant court, stable et descriptif de l'incident,
             en minuscules avec tirets, sans numéro aléatoire.
@@ -284,6 +308,18 @@ automation:
               selector:
                 text:
 
+            event_start_at:
+              description: "Début futur explicite de l'événement en ISO 8601, sinon chaîne vide"
+              required: true
+              selector:
+                text:
+
+            valid_until:
+              description: "Fin de validité explicite en ISO 8601, sinon chaîne vide"
+              required: true
+              selector:
+                text:
+
             analysis_confidence:
               description: "Confiance dans la classification, de 0 à 100"
               required: true
@@ -330,6 +366,8 @@ automation:
           protective_action: "{{ rss_result.data.protective_action | default(false) }}"
           lifecycle: "{{ rss_result.data.lifecycle | default('new') }}"
           event_key: "{{ rss_result.data.event_key | default('') }}"
+          event_start_at: "{{ rss_result.data.event_start_at | default('') }}"
+          valid_until: "{{ rss_result.data.valid_until | default('') }}"
           analysis_confidence: "{{ rss_result.data.analysis_confidence | default(75) }}"
           summary_fr: "{{ rss_result.data.summary_fr | default('') }}"
           reason: "{{ rss_result.data.reason | default('') }}"
