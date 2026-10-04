@@ -310,6 +310,8 @@ class LagezentrumNewsContextSensor(_ContextBaseSensor):
             "reason": top.get("reason", ""),
             "recommended_action": top.get("recommended_action", "aucune"),
             "title": top.get("title", ""),
+            "original_title": top.get("original_title", ""),
+            "event_timing_text": top.get("event_timing_text", ""),
             "link": top.get("link", ""),
             "feed_url": top.get("feed_url", ""),
             "source_name": top.get("source_name", ""),
