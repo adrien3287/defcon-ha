@@ -243,8 +243,8 @@ views:
             name: SOC batterie
           - entity: sensor.victron_over_mqtt_battery_power_dc
             name: Puissance batterie
-          - entity: sensor.victron_over_mqtt_battery_time_to_full_empty
-            name: Autonomie / charge
+          - entity: sensor.victron_over_mqtt_autonomie_charge_battery_dyness_full_empty
+            name: Autonomie restante batterie
 
       - type: history-graph
         title: Tensions réseau - 12 h
