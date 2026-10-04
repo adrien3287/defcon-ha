@@ -17,8 +17,8 @@
 # - NEVER changes the deterministic DEFCON level directly.
 
 automation:
-  - alias: "Lagezentrum - Analyse RSS Gemini v0.4"
-    id: lagezentrum_analyse_rss_gemini_v04
+  - alias: "Lagezentrum - Analyse RSS Gemini v0.4.3"
+    id: lagezentrum_analyse_rss_gemini_v043
     mode: queued
     max: 50
 
@@ -118,7 +118,7 @@ automation:
       - action: ai_task.generate_data
         data:
           entity_id: ai_task.google_ai_task
-          task_name: "Lagezentrum RSS v0.4"
+          task_name: "Lagezentrum RSS v0.4.3"
           instructions: >-
             Tu analyses une information pour un centre de situation domestique
             situé à Hamburg-Marmstorf.
