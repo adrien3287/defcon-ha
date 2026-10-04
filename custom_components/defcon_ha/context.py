@@ -123,7 +123,7 @@ def _parse_dt(value: Any) -> datetime | None:
 def _expiry_for_event(normalized: dict[str, Any], now: datetime) -> tuple[datetime, str]:
     """Return expiry, preferring an explicit future event validity date."""
     valid_until = _parse_dt(normalized.get("valid_until"))
-    if valid_until is not None and valid_until > now:
+    if valid_until is not None:
         return valid_until, "explicit_event_date"
 
     ttl = timedelta(
@@ -289,6 +289,12 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         return {
             "event_key": event_key,
             "title": _clean_text(data.get("title"), max_len=500),
+            "original_title": _clean_text(
+                data.get("original_title"), max_len=500
+            ),
+            "event_timing_text": _clean_text(
+                data.get("event_timing_text"), max_len=1000
+            ),
             "summary_fr": _clean_text(data.get("summary_fr"), max_len=2000),
             "reason": _clean_text(data.get("reason"), max_len=2000),
             "recommended_action": _clean_text(
@@ -418,10 +424,19 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         # Keep an earlier explicit event date when an update does not repeat it.
         old_event_start_at = item.get("event_start_at", "")
         old_valid_until = item.get("valid_until", "")
+        old_original_title = item.get("original_title", "")
+        old_event_timing_text = item.get("event_timing_text", "")
+        old_link = item.get("link", "")
         if not normalized.get("event_start_at") and old_event_start_at:
             normalized["event_start_at"] = old_event_start_at
         if not normalized.get("valid_until") and old_valid_until:
             normalized["valid_until"] = old_valid_until
+        if not normalized.get("original_title") and old_original_title:
+            normalized["original_title"] = old_original_title
+        if not normalized.get("event_timing_text") and old_event_timing_text:
+            normalized["event_timing_text"] = old_event_timing_text
+        if not normalized.get("link") and old_link:
+            normalized["link"] = old_link
 
         # Keep the highest observed importance until an explicit resolution.
         item.update(normalized)
