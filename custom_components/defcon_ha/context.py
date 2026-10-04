@@ -120,6 +120,18 @@ def _parse_dt(value: Any) -> datetime | None:
     return dt_util.as_utc(parsed)
 
 
+def _expiry_for_event(normalized: dict[str, Any], now: datetime) -> tuple[datetime, str]:
+    """Return expiry, preferring an explicit future event validity date."""
+    valid_until = _parse_dt(normalized.get("valid_until"))
+    if valid_until is not None and valid_until > now:
+        return valid_until, "explicit_event_date"
+
+    ttl = timedelta(
+        hours=_as_int(normalized.get("ttl_hours"), 12, 1, 168)
+    )
+    return now + ttl, "category_ttl"
+
+
 def _event_sort_key(item: dict[str, Any]) -> tuple[int, int, int, str]:
     return (
         _as_int(item.get("importance"), 0, 0, 3),
@@ -267,6 +279,8 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         )
 
         published_at = _parse_dt(data.get("published_at"))
+        event_start_at = _parse_dt(data.get("event_start_at"))
+        valid_until = _parse_dt(data.get("valid_until"))
         source_name = _clean_text(data.get("source_name"), max_len=120)
         feed_url = _clean_text(data.get("feed_url"), max_len=500)
         link = _clean_text(data.get("link"), max_len=500)
@@ -301,6 +315,12 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             "confidence_score": confidence_score,
             "published_at": (
                 published_at.isoformat() if published_at else ""
+            ),
+            "event_start_at": (
+                event_start_at.isoformat() if event_start_at else ""
+            ),
+            "valid_until": (
+                valid_until.isoformat() if valid_until else ""
             ),
             "ttl_hours": ttl_hours,
             "received_at": now.isoformat(),
@@ -360,16 +380,15 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         normalized: dict[str, Any],
         now: datetime,
     ) -> dict[str, Any]:
-        ttl = timedelta(
-            hours=_as_int(normalized.get("ttl_hours"), 12, 1, 168)
-        )
+        expires_at, validity_source = _expiry_for_event(normalized, now)
         source_identity = normalized["source_identity"]
         return {
             **normalized,
             "status": "active",
             "first_seen": now.isoformat(),
             "last_seen": now.isoformat(),
-            "expires_at": (now + ttl).isoformat(),
+            "expires_at": expires_at.isoformat(),
+            "validity_source": validity_source,
             "stale_since": "",
             "resolved_at": "",
             "sources": [
@@ -396,6 +415,14 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             normalized.get("importance"), 0, 0, 3
         )
 
+        # Keep an earlier explicit event date when an update does not repeat it.
+        old_event_start_at = item.get("event_start_at", "")
+        old_valid_until = item.get("valid_until", "")
+        if not normalized.get("event_start_at") and old_event_start_at:
+            normalized["event_start_at"] = old_event_start_at
+        if not normalized.get("valid_until") and old_valid_until:
+            normalized["valid_until"] = old_valid_until
+
         # Keep the highest observed importance until an explicit resolution.
         item.update(normalized)
         item["importance"] = max(old_importance, new_importance)
@@ -404,10 +431,9 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         item["stale_since"] = ""
         item["resolved_at"] = ""
 
-        ttl = timedelta(
-            hours=_as_int(item.get("ttl_hours"), 12, 1, 168)
-        )
-        item["expires_at"] = (now + ttl).isoformat()
+        expires_at, validity_source = _expiry_for_event(item, now)
+        item["expires_at"] = expires_at.isoformat()
+        item["validity_source"] = validity_source
 
         sources = item.get("sources")
         if not isinstance(sources, list):
