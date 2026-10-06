@@ -11,7 +11,14 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import (
+    COMMONSIGHT_SUPPORTED_LAYERS,
     CONF_BATTERY_SOC_ENTITIES,
+    CONF_COMMONSIGHT_BASE_URL,
+    CONF_COMMONSIGHT_ENABLED,
+    CONF_COMMONSIGHT_HOME_REGION,
+    CONF_COMMONSIGHT_LAYERS,
+    CONF_COMMONSIGHT_RADIUS_KM,
+    CONF_COMMONSIGHT_SCOPE,
     CONF_BFS_ASSESSMENT_ENTITIES,
     CONF_DWD_ADVANCE_ENTITIES,
     CONF_DWD_CURRENT_ENTITIES,
@@ -31,6 +38,12 @@ from .const import (
     CONF_WAN_VODAFONE_ENTITIES,
     DEFAULT_BATTERY_SOC_ENTITIES,
     DEFAULT_BFS_ASSESSMENT_ENTITIES,
+    DEFAULT_COMMONSIGHT_BASE_URL,
+    DEFAULT_COMMONSIGHT_ENABLED,
+    DEFAULT_COMMONSIGHT_HOME_REGION,
+    DEFAULT_COMMONSIGHT_LAYERS,
+    DEFAULT_COMMONSIGHT_RADIUS_KM,
+    DEFAULT_COMMONSIGHT_SCOPE,
     DEFAULT_DWD_ADVANCE_ENTITIES,
     DEFAULT_DWD_CURRENT_ENTITIES,
     DEFAULT_FIRE_HEAT_ENTITIES,
@@ -52,6 +65,12 @@ from .const import (
 
 _ENTITY_SELECTOR = selector.EntitySelector(
     selector.EntitySelectorConfig(multiple=True)
+)
+_COMMONSIGHT_LAYER_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=list(COMMONSIGHT_SUPPORTED_LAYERS),
+        multiple=True,
+    )
 )
 
 
@@ -136,6 +155,58 @@ def _schema(values: dict[str, Any] | None = None) -> vol.Schema:
                 CONF_OTHER_ENTITIES,
                 default=current(CONF_OTHER_ENTITIES, []),
             ): _ENTITY_SELECTOR,
+            vol.Optional(
+                CONF_COMMONSIGHT_ENABLED,
+                default=bool(
+                    values.get(
+                        CONF_COMMONSIGHT_ENABLED,
+                        DEFAULT_COMMONSIGHT_ENABLED,
+                    )
+                ),
+            ): bool,
+            vol.Optional(
+                CONF_COMMONSIGHT_BASE_URL,
+                default=str(
+                    values.get(
+                        CONF_COMMONSIGHT_BASE_URL,
+                        DEFAULT_COMMONSIGHT_BASE_URL,
+                    )
+                ),
+            ): str,
+            vol.Optional(
+                CONF_COMMONSIGHT_SCOPE,
+                default=str(
+                    values.get(
+                        CONF_COMMONSIGHT_SCOPE,
+                        DEFAULT_COMMONSIGHT_SCOPE,
+                    )
+                ),
+            ): vol.In(("DE", "AT", "CH")),
+            vol.Optional(
+                CONF_COMMONSIGHT_HOME_REGION,
+                default=str(
+                    values.get(
+                        CONF_COMMONSIGHT_HOME_REGION,
+                        DEFAULT_COMMONSIGHT_HOME_REGION,
+                    )
+                ),
+            ): str,
+            vol.Optional(
+                CONF_COMMONSIGHT_RADIUS_KM,
+                default=float(
+                    values.get(
+                        CONF_COMMONSIGHT_RADIUS_KM,
+                        DEFAULT_COMMONSIGHT_RADIUS_KM,
+                    )
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=1, max=300)),
+            vol.Optional(
+                CONF_COMMONSIGHT_LAYERS,
+                default=current(
+                    CONF_COMMONSIGHT_LAYERS,
+                    DEFAULT_COMMONSIGHT_LAYERS,
+                ),
+            ): _COMMONSIGHT_LAYER_SELECTOR,
         }
     )
 
@@ -167,7 +238,7 @@ class DefconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class DefconOptionsFlow(config_entries.OptionsFlow):
-    """Edit deterministic DEFCON source entities."""
+    """Edit deterministic sources and the optional CommonSight context feed."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
