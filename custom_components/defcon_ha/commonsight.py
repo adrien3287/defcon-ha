@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import hashlib
 import json
 import logging
 import math
@@ -837,8 +838,7 @@ class CommonSightCoordinator(DataUpdateCoordinator[CommonSightSnapshot]):
                 str(item.get("time") or ""),
             )
         )
-        # Stable enough for an item that unexpectedly lacks the contract id.
-        return str(abs(hash(value)))
+        return hashlib.sha1(value.encode("utf-8")).hexdigest()[:16]
 
     @staticmethod
     def _distance_text(geo: dict[str, Any]) -> str:
