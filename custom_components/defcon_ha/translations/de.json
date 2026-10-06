@@ -1,57 +1,75 @@
 {
   "title": "DEFCON Home",
   "config": {
-    "step": {"user": {
-      "title": "DEFCON Home Quellen",
-      "description": "Lokale deterministische Home-Assistant-Quellen konfigurieren. Die DEFCON-Engine bleibt lokal und KI-frei; optionale Kontext-Ereignisse werden getrennt verarbeitet.",
-      "data": {
-        "nina_entities": "NINA Warnentitäten",
-        "dwd_current_entities": "DWD aktuelle Warnstufe",
-        "dwd_advance_entities": "DWD Vorabwarnstufe",
-        "flood_entities": "Hochwasser-Warnstufen",
-        "pegel_stage_entities": "PEGELONLINE Stufen",
-        "uba_lqi_entities": "UBA LQI numerisch",
-        "bfs_assessment_entities": "BfS ODL Bewertungen",
-        "lightning_count_entities": "Blitzortung Zähler",
-        "lightning_distance_entities": "Blitzortung Entfernung",
-        "noaa_entities": "NOAA Weltraumwetter",
-        "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
-        "fire_smoke_entities": "Lokale Raucherkennung",
-        "grid_voltage_entities": "Netzspannungen L1/L2/L3",
-        "grid_alarm_entities": "Netzausfall-Alarme",
-        "battery_soc_entities": "Batterie-SOC",
-        "wan_telekom_entities": "Telekom WAN",
-        "wan_vodafone_entities": "Vodafone WAN",
-        "other_entities": "Weitere Alarm-/Statusentitäten"
+    "step": {
+      "user": {
+        "title": "DEFCON Home Quellen",
+        "description": "Konfiguriert deterministische Home-Assistant-Quellen und den optionalen sekundären CommonSight-Lagefeed. CommonSight dient nur als Kontext/Validierung und ändert den deterministischen DEFCON nie allein.",
+        "data": {
+          "nina_entities": "NINA Warnentitäten",
+          "dwd_current_entities": "DWD aktuelle Warnstufe",
+          "dwd_advance_entities": "DWD Vorabwarnstufe",
+          "flood_entities": "Hochwasser-Warnstufen",
+          "pegel_stage_entities": "PEGELONLINE Stufen",
+          "uba_lqi_entities": "UBA LQI numerisch",
+          "bfs_assessment_entities": "BfS ODL Bewertungen",
+          "lightning_count_entities": "Blitzortung Zähler",
+          "lightning_distance_entities": "Blitzortung Entfernung",
+          "noaa_entities": "NOAA Weltraumwetter",
+          "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
+          "fire_smoke_entities": "Lokale Raucherkennung",
+          "grid_voltage_entities": "Netzspannungen L1/L2/L3",
+          "grid_alarm_entities": "Netzausfall-Alarme",
+          "battery_soc_entities": "Batterie-SOC",
+          "wan_telekom_entities": "Telekom WAN",
+          "wan_vodafone_entities": "Vodafone WAN",
+          "other_entities": "Weitere Alarm-/Statusentitäten",
+          "commonsight_enabled": "Sekundären CommonSight-Feed aktivieren",
+          "commonsight_base_url": "CommonSight-Basis-URL",
+          "commonsight_scope": "CommonSight-Länderbereich",
+          "commonsight_home_region": "CommonSight-Heimatregion (z. B. DE-HH)",
+          "commonsight_radius_km": "CommonSight-Radius (km)",
+          "commonsight_layers": "CommonSight-Ebenen"
+        }
       }
-    }},
+    },
     "abort": {
       "single_instance_allowed": "Es kann nur eine DEFCON Home Instanz konfiguriert werden.",
       "already_configured": "DEFCON Home ist bereits konfiguriert."
     }
   },
-  "options": {"step": {"init": {
-    "title": "DEFCON Home Optionen",
-    "description": "Änderungen werden auf die lokale deterministische Engine angewendet.",
-    "data": {
-      "nina_entities": "NINA Warnentitäten",
-      "dwd_current_entities": "DWD aktuelle Warnstufe",
-      "dwd_advance_entities": "DWD Vorabwarnstufe",
-      "flood_entities": "Hochwasser-Warnstufen",
-      "pegel_stage_entities": "PEGELONLINE Stufen",
-      "uba_lqi_entities": "UBA LQI numerisch",
-      "bfs_assessment_entities": "BfS ODL Bewertungen",
-      "lightning_count_entities": "Blitzortung Zähler",
-      "lightning_distance_entities": "Blitzortung Entfernung",
-      "noaa_entities": "NOAA Weltraumwetter",
-      "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
-      "fire_smoke_entities": "Lokale Raucherkennung",
-      "grid_voltage_entities": "Netzspannungen L1/L2/L3",
-      "grid_alarm_entities": "Netzausfall-Alarme",
-      "battery_soc_entities": "Batterie-SOC",
-      "wan_telekom_entities": "Telekom WAN",
-      "wan_vodafone_entities": "Vodafone WAN",
-      "other_entities": "Weitere Alarm-/Statusentitäten"
+  "options": {
+    "step": {
+      "init": {
+        "title": "DEFCON Home Optionen",
+        "description": "Änderungen gelten für die deterministischen Quellen und den optionalen sekundären CommonSight-Lagefeed.",
+        "data": {
+          "nina_entities": "NINA Warnentitäten",
+          "dwd_current_entities": "DWD aktuelle Warnstufe",
+          "dwd_advance_entities": "DWD Vorabwarnstufe",
+          "flood_entities": "Hochwasser-Warnstufen",
+          "pegel_stage_entities": "PEGELONLINE Stufen",
+          "uba_lqi_entities": "UBA LQI numerisch",
+          "bfs_assessment_entities": "BfS ODL Bewertungen",
+          "lightning_count_entities": "Blitzortung Zähler",
+          "lightning_distance_entities": "Blitzortung Entfernung",
+          "noaa_entities": "NOAA Weltraumwetter",
+          "fire_heat_entities": "Lokale Wärme/Brand-Erkennung",
+          "fire_smoke_entities": "Lokale Raucherkennung",
+          "grid_voltage_entities": "Netzspannungen L1/L2/L3",
+          "grid_alarm_entities": "Netzausfall-Alarme",
+          "battery_soc_entities": "Batterie-SOC",
+          "wan_telekom_entities": "Telekom WAN",
+          "wan_vodafone_entities": "Vodafone WAN",
+          "other_entities": "Weitere Alarm-/Statusentitäten",
+          "commonsight_enabled": "Sekundären CommonSight-Feed aktivieren",
+          "commonsight_base_url": "CommonSight-Basis-URL",
+          "commonsight_scope": "CommonSight-Länderbereich",
+          "commonsight_home_region": "CommonSight-Heimatregion (z. B. DE-HH)",
+          "commonsight_radius_km": "CommonSight-Radius (km)",
+          "commonsight_layers": "CommonSight-Ebenen"
+        }
+      }
     }
-  }}}
+  }
 }
