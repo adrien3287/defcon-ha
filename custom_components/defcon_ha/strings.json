@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "DEFCON Home sources",
-        "description": "Configure deterministic Home Assistant sources. The DEFCON engine stays local and AI-free; optional context events are handled separately.",
+        "description": "Configure deterministic Home Assistant sources and the optional CommonSight secondary situation feed. CommonSight is context/validation only and never changes deterministic DEFCON by itself.",
         "data": {
           "nina_entities": "NINA warning entities",
           "dwd_current_entities": "DWD current warning-level entities",
@@ -23,7 +23,13 @@
           "battery_soc_entities": "Battery SOC entities",
           "wan_telekom_entities": "Telekom WAN link entities",
           "wan_vodafone_entities": "Vodafone WAN link entities",
-          "other_entities": "Other alarm/status entities"
+          "other_entities": "Other alarm/status entities",
+          "commonsight_enabled": "Enable CommonSight secondary feed",
+          "commonsight_base_url": "CommonSight base URL",
+          "commonsight_scope": "CommonSight country scope",
+          "commonsight_home_region": "CommonSight home region (e.g. DE-HH)",
+          "commonsight_radius_km": "CommonSight radius (km)",
+          "commonsight_layers": "CommonSight layers"
         }
       }
     },
@@ -36,7 +42,7 @@
     "step": {
       "init": {
         "title": "DEFCON Home options",
-        "description": "Changes are applied to the local deterministic engine.",
+        "description": "Changes are applied to deterministic sources and to the optional CommonSight secondary situation feed.",
         "data": {
           "nina_entities": "NINA warning entities",
           "dwd_current_entities": "DWD current warning-level entities",
@@ -55,7 +61,13 @@
           "battery_soc_entities": "Battery SOC entities",
           "wan_telekom_entities": "Telekom WAN link entities",
           "wan_vodafone_entities": "Vodafone WAN link entities",
-          "other_entities": "Other alarm/status entities"
+          "other_entities": "Other alarm/status entities",
+          "commonsight_enabled": "Enable CommonSight secondary feed",
+          "commonsight_base_url": "CommonSight base URL",
+          "commonsight_scope": "CommonSight country scope",
+          "commonsight_home_region": "CommonSight home region (e.g. DE-HH)",
+          "commonsight_radius_km": "CommonSight radius (km)",
+          "commonsight_layers": "CommonSight layers"
         }
       }
     }
