@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.4.5"
+VERSION = "0.4.6-beta.1"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -28,8 +28,44 @@ CONF_WAN_VODAFONE_ENTITIES = "wan_vodafone_entities"
 CONF_OTHER_ENTITIES = "other_entities"
 CONF_MANUAL_OVERRIDE = "manual_override"
 
+CONF_COMMONSIGHT_ENABLED = "commonsight_enabled"
+CONF_COMMONSIGHT_BASE_URL = "commonsight_base_url"
+CONF_COMMONSIGHT_SCOPE = "commonsight_scope"
+CONF_COMMONSIGHT_HOME_REGION = "commonsight_home_region"
+CONF_COMMONSIGHT_RADIUS_KM = "commonsight_radius_km"
+CONF_COMMONSIGHT_LAYERS = "commonsight_layers"
+
 DEFAULT_NAME = "Home"
 DEFAULT_OVERRIDE = "auto"
+
+DEFAULT_COMMONSIGHT_ENABLED = True
+DEFAULT_COMMONSIGHT_BASE_URL = "https://lagezentrum.previval.org"
+DEFAULT_COMMONSIGHT_SCOPE = "DE"
+DEFAULT_COMMONSIGHT_HOME_REGION = "DE-HH"
+DEFAULT_COMMONSIGHT_RADIUS_KM = 50.0
+COMMONSIGHT_SUPPORTED_LAYERS = (
+    "warnings",
+    "water",
+    "radiation",
+    "traffic",
+    "nature",
+    "space",
+    "news",
+    "weather",
+    "air",
+)
+DEFAULT_COMMONSIGHT_LAYERS = [
+    "warnings",
+    "water",
+    "radiation",
+    "traffic",
+    "nature",
+    "space",
+    "news",
+]
+COMMONSIGHT_REFRESH_MINUTES = 2
+COMMONSIGHT_REQUEST_TIMEOUT_SECONDS = 20
+COMMONSIGHT_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 DEFAULT_NINA_ENTITIES = [
     "binary_sensor.hamburg_freie_und_hansestadt_warning_1",
@@ -152,6 +188,9 @@ CONTEXT_TTL_HOURS = {
     "logistics": 24,
     "health": 24,
     "geopolitical": 36,
+    "radiation": 12,
+    "geological": 24,
+    "space_weather": 12,
     "other": 12,
 }
 
