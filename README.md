@@ -1,5 +1,22 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.6-beta.1 — branch `vb.0.0.1`
+
+Experimental CommonSight integration:
+
+- adds CommonSight as an independent **secondary situation-picture source**; direct official Home Assistant sources remain primary;
+- polls CommonSight's compact `api/status.php` endpoint and only reloads immutable JSON snapshots when their version changes;
+- supports the `warnings`, `water`, `radiation`, `traffic`, `nature`, `space`, `news`, `weather` and `air` layers;
+- converts only operationally meaningful abnormal items into the existing context engine: nearby official warnings, elevated/high water or radiation assessments, relevant nearby traffic, local earthquakes and elevated NOAA space-weather indices;
+- uses the Home Assistant home coordinates for 0–10 km, 10–25 km and configurable outer-radius relevance bands, with a configured region fallback (default `DE-HH`);
+- adds `sensor.defcon_home_commonsight_health` with per-layer `ok/partial/error/setup/pending`, staleness, versions, issues and last-error information;
+- treats **no alert** and **source unavailable/stale** as different states;
+- tags CommonSight events as `aggregator` sources and keeps them advisory; they never change deterministic DEFCON by themselves;
+- reconciles structured CommonSight events when a layer no longer reports them instead of waiting only for generic TTL expiry;
+- keeps the existing source/link/event correlation so a direct source and CommonSight can corroborate the same event instead of becoming independent DEFCON triggers.
+
+Default CommonSight endpoint: `https://lagezentrum.previval.org`, scope `DE`, home region `DE-HH`, radius 50 km. All values are editable in the integration options.
+
 ## 0.4.5
 
 - the 2026-10-04 RSS seed snapshot now contains verified direct article URLs for 104 of 107 replayed items;
@@ -98,10 +115,14 @@ Since version 0.3 the private GitHub JSON/context feed is removed. The automatic
 
 ## Architecture
 
-Home Assistant entities are grouped into two domains:
+Home Assistant entities are grouped into two deterministic domains:
 
 - **External situation**: NINA, DWD current + advance, flood warning levels, PEGELONLINE, UBA LQI, BfS ODL assessments, Blitzortung and NOAA Space Weather.
 - **House infrastructure**: whole-house fire detection (smoke/heat loop), three-phase grid voltage, Victron grid-loss alarm, battery SOC and the two Internet WAN links.
+
+A third, explicitly non-deterministic layer supplies **context and validation**:
+
+- **CommonSight**: structured status + snapshots for official warnings, water, radiation, traffic, natural hazards and space weather. CommonSight feeds the context engine and source-health monitoring only.
 
 NASA FIRMS remains useful for the situation map but is **explicitly excluded from the DEFCON calculation**.
 
@@ -232,6 +253,7 @@ Unavailable source entities are reported separately as degraded monitoring and a
 - `sensor.defcon_home_external_level`
 - `sensor.defcon_home_infrastructure_level`
 - `sensor.defcon_home_source_health`
+- `sensor.defcon_home_commonsight_health` (secondary structured feed; advisory only)
 - `sensor.defcon_home_context_status`
 - `sensor.defcon_home_context_active_events`
 - `sensor.defcon_home_context_recommended_defcon` (advisory only)
