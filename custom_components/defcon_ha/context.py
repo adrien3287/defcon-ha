@@ -36,11 +36,12 @@ _STORAGE_VERSION = 1
 _TRUE_VALUES = {"true", "1", "yes", "on"}
 _ALLOWED_LIFECYCLE = {"new", "update", "resolved"}
 _ALLOWED_SOURCE_TIERS = {"local", "national", "strategic"}
-_ALLOWED_SOURCE_CLASSES = {"official", "public_media", "established_media", "other"}
+_ALLOWED_SOURCE_CLASSES = {"official", "aggregator", "public_media", "established_media", "other"}
 _ALLOWED_RELEVANCE = {"direct", "potential", "none"}
 
 _SOURCE_CONFIDENCE = {
     "official": 95,
+    "aggregator": 85,
     "public_media": 85,
     "established_media": 80,
     "other": 60,
@@ -214,16 +215,68 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         self.hass.async_create_task(self._async_ingest_event(event))
 
     async def _async_ingest_event(self, event: Event) -> None:
+        await self.async_ingest(
+            dict(event.data),
+            now=dt_util.as_utc(event.time_fired),
+        )
+
+    async def async_ingest(
+        self,
+        data: dict[str, Any],
+        *,
+        now: datetime | None = None,
+    ) -> bool:
+        """Ingest one normalized-context candidate from any source."""
         if not self._loaded:
             await self._async_load()
 
-        now = dt_util.as_utc(event.time_fired)
-        changed = self._ingest(dict(event.data), now)
-        changed |= self._sweep(now)
+        event_time = dt_util.as_utc(now) if now is not None else dt_util.utcnow()
+        changed = self._ingest(dict(data), event_time)
+        changed |= self._sweep(event_time)
 
         if changed:
             await self._async_save()
-            self.async_set_updated_data(self._snapshot(now))
+            self.async_set_updated_data(self._snapshot(event_time))
+        return changed
+
+    async def async_reconcile_source(
+        self,
+        source_system: str,
+        active_event_keys: set[str],
+        *,
+        now: datetime | None = None,
+    ) -> bool:
+        """Resolve events a structured source no longer reports.
+
+        Reconciliation is source-scoped so a failed/missing CommonSight layer
+        never clears events from unrelated sources.
+        """
+        if not self._loaded:
+            await self._async_load()
+
+        event_time = dt_util.as_utc(now) if now is not None else dt_util.utcnow()
+        kept: list[dict[str, Any]] = []
+        changed = False
+
+        for item in self._events:
+            if (
+                item.get("source_system") == source_system
+                and item.get("event_key") not in active_event_keys
+            ):
+                resolved = dict(item)
+                resolved["status"] = "resolved"
+                resolved["resolved_at"] = event_time.isoformat()
+                resolved["resolution_reason"] = "source_no_longer_reports"
+                self._append_history(resolved)
+                changed = True
+                continue
+            kept.append(item)
+
+        if changed:
+            self._events = kept
+            await self._async_save()
+            self.async_set_updated_data(self._snapshot(event_time))
+        return changed
 
     def _normalize(self, data: dict[str, Any], now: datetime) -> dict[str, Any]:
         category = (
@@ -285,6 +338,9 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         feed_url = _clean_text(data.get("feed_url"), max_len=500)
         link = _clean_text(data.get("link"), max_len=500)
         source_identity = source_name or feed_url or link or "unknown"
+        source_system = _clean_text(
+            data.get("source_system"), max_len=80
+        ).lower()
 
         return {
             "event_key": event_key,
@@ -312,6 +368,7 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             "lifecycle": lifecycle,
             "source_name": source_name,
             "source_identity": source_identity,
+            "source_system": source_system,
             "source_tier": source_tier,
             "source_class": source_class,
             "feed_url": feed_url,
