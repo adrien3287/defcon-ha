@@ -239,6 +239,51 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             self.async_set_updated_data(self._snapshot(event_time))
         return changed
 
+    async def async_sync_source(
+        self,
+        source_system: str,
+        candidates: list[dict[str, Any]],
+        *,
+        now: datetime | None = None,
+    ) -> bool:
+        """Atomically ingest and reconcile one structured source."""
+        if not self._loaded:
+            await self._async_load()
+
+        event_time = dt_util.as_utc(now) if now is not None else dt_util.utcnow()
+        active_event_keys: set[str] = set()
+        changed = False
+
+        for raw in candidates:
+            candidate = dict(raw)
+            candidate["source_system"] = source_system
+            normalized = self._normalize(candidate, event_time)
+            active_event_keys.add(normalized["event_key"])
+            changed |= self._ingest(candidate, event_time)
+
+        kept: list[dict[str, Any]] = []
+        for item in self._events:
+            if (
+                item.get("source_system") == source_system
+                and item.get("event_key") not in active_event_keys
+            ):
+                resolved = dict(item)
+                resolved["status"] = "resolved"
+                resolved["resolved_at"] = event_time.isoformat()
+                resolved["resolution_reason"] = "source_no_longer_reports"
+                self._append_history(resolved)
+                changed = True
+                continue
+            kept.append(item)
+
+        self._events = kept
+        changed |= self._sweep(event_time)
+
+        if changed:
+            await self._async_save()
+            self.async_set_updated_data(self._snapshot(event_time))
+        return changed
+
     async def async_reconcile_source(
         self,
         source_system: str,
