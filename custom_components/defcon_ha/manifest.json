@@ -1,15 +1,22 @@
 {
   "domain": "defcon_ha",
   "name": "DEFCON Home",
-  "version": "0.4.5",
+  "version": "0.4.6-beta.1",
   "config_flow": true,
   "single_config_entry": true,
   "integration_type": "service",
   "iot_class": "local_push",
   "documentation": "https://github.com/adrien3287/defcon-ha",
   "issue_tracker": "https://github.com/adrien3287/defcon-ha/issues",
-  "codeowners": ["@adrien3287"],
-  "dependencies": ["frontend", "http"],
-  "after_dependencies": ["nina"],
+  "codeowners": [
+    "@adrien3287"
+  ],
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
+  "after_dependencies": [
+    "nina"
+  ],
   "requirements": []
 }
