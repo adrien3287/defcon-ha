@@ -274,18 +274,12 @@ class CommonSightCoordinator(DataUpdateCoordinator[CommonSightSnapshot]):
                     health["snapshot_ok"] = True
                     snapshot_fresh_for_reconcile = True
                     events = self._events_from_snapshot(layer, snapshot)
-                    active_keys: set[str] = set()
-                    for event_data in events:
-                        key = str(event_data.get("event_key", ""))
-                        if key:
-                            active_keys.add(key)
-                        await self.context.async_ingest(event_data, now=now)
                     nearby_event_count += len(events)
 
                     if snapshot_fresh_for_reconcile:
-                        await self.context.async_reconcile_source(
+                        await self.context.async_sync_source(
                             f"commonsight:{layer}",
-                            active_keys,
+                            events,
                             now=now,
                         )
 
