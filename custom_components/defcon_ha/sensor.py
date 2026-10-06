@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .commonsight import CommonSightCoordinator
 from .const import DOMAIN
 from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
@@ -20,6 +21,9 @@ async def async_setup_entry(
 ) -> None:
     coordinator: DefconCoordinator = hass.data[DOMAIN][entry.entry_id]
     context: ContextCoordinator = hass.data[DOMAIN][f"{entry.entry_id}_context"]
+    commonsight: CommonSightCoordinator = hass.data[DOMAIN][
+        f"{entry.entry_id}_commonsight"
+    ]
     async_add_entities(
         [
             DefconLevelSensor(coordinator, entry),
@@ -27,6 +31,7 @@ async def async_setup_entry(
             DefconExternalSensor(coordinator, entry),
             DefconInfrastructureSensor(coordinator, entry),
             DefconSourceHealthSensor(coordinator, entry),
+            CommonSightHealthSensor(commonsight, entry),
             ContextStatusSensor(context, entry),
             ContextActiveEventsSensor(context, entry),
             ContextRecommendedDefconSensor(context, entry),
@@ -182,6 +187,73 @@ class DefconSourceHealthSensor(_DefconBaseSensor):
             "source_entities": self.coordinator.source_entities,
         }
 
+
+class _CommonSightBaseSensor(
+    CoordinatorEntity[CommonSightCoordinator],
+    SensorEntity,
+):
+    """Base class for the secondary CommonSight feed."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: CommonSightCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": "DEFCON Home",
+            "manufacturer": "DEFCON Home",
+            "model": "Local deterministic situation engine",
+        }
+
+
+class CommonSightHealthSensor(_CommonSightBaseSensor):
+    """Health and coverage state of the CommonSight secondary feed."""
+
+    _attr_name = "CommonSight health"
+    _attr_icon = "mdi:map-marker-alert-outline"
+    _unrecorded_attributes = frozenset({"layer_health"})
+
+    def __init__(
+        self,
+        coordinator: CommonSightCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_commonsight_health"
+
+    @property
+    def native_value(self) -> str:
+        return self.coordinator.data.health
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        data = self.coordinator.data
+        return {
+            "enabled": data.enabled,
+            "scope": data.scope,
+            "home_region": data.home_region,
+            "radius_km": data.radius_km,
+            "base_url": data.base_url,
+            "nearby_event_count": data.nearby_event_count,
+            "degraded_layers": data.degraded_layers,
+            "partial_layers": data.partial_layers,
+            "layer_health": data.layer_health,
+            "versions": data.versions,
+            "last_success": (
+                data.last_success.isoformat()
+                if data.last_success is not None
+                else ""
+            ),
+            "checked_at": data.checked_at.isoformat(),
+            "last_error": data.last_error,
+            "affects_defcon": False,
+            "role": "secondary_validation",
+        }
 
 
 class _ContextBaseSensor(CoordinatorEntity[ContextCoordinator], SensorEntity):
