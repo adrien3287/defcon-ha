@@ -1,57 +1,75 @@
 {
   "title": "DEFCON Home",
   "config": {
-    "step": {"user": {
-      "title": "Sources DEFCON Home",
-      "description": "Configure les sources Home Assistant du moteur déterministe local. Le DEFCON reste local et sans IA ; les événements de contexte optionnels sont traités séparément.",
-      "data": {
-        "nina_entities": "Entités d'alerte NINA",
-        "dwd_current_entities": "Niveau DWD actuel",
-        "dwd_advance_entities": "Niveau DWD anticipé",
-        "flood_entities": "Niveaux d'alerte inondation",
-        "pegel_stage_entities": "Niveaux PEGELONLINE",
-        "uba_lqi_entities": "LQI numériques UBA",
-        "bfs_assessment_entities": "Évaluations ODL BfS",
-        "lightning_count_entities": "Compteurs Blitzortung",
-        "lightning_distance_entities": "Distances Blitzortung",
-        "noaa_entities": "Météo spatiale NOAA",
-        "fire_heat_entities": "Détection locale chaleur/incendie",
-        "fire_smoke_entities": "Détection locale fumée",
-        "grid_voltage_entities": "Tensions réseau L1/L2/L3",
-        "grid_alarm_entities": "Alarmes perte réseau",
-        "battery_soc_entities": "SOC batterie",
-        "wan_telekom_entities": "Lien WAN Telekom",
-        "wan_vodafone_entities": "Lien WAN Vodafone",
-        "other_entities": "Autres alarmes/états"
+    "step": {
+      "user": {
+        "title": "Sources DEFCON Home",
+        "description": "Configure les sources déterministes Home Assistant et le flux situationnel secondaire CommonSight. CommonSight sert uniquement au contexte et à la validation et ne modifie jamais seul le DEFCON déterministe.",
+        "data": {
+          "nina_entities": "Entités d'alerte NINA",
+          "dwd_current_entities": "Niveau DWD actuel",
+          "dwd_advance_entities": "Niveau DWD anticipé",
+          "flood_entities": "Niveaux d'alerte inondation",
+          "pegel_stage_entities": "Niveaux PEGELONLINE",
+          "uba_lqi_entities": "LQI numériques UBA",
+          "bfs_assessment_entities": "Évaluations ODL BfS",
+          "lightning_count_entities": "Compteurs Blitzortung",
+          "lightning_distance_entities": "Distances Blitzortung",
+          "noaa_entities": "Météo spatiale NOAA",
+          "fire_heat_entities": "Détection locale chaleur/incendie",
+          "fire_smoke_entities": "Détection locale fumée",
+          "grid_voltage_entities": "Tensions réseau L1/L2/L3",
+          "grid_alarm_entities": "Alarmes perte réseau",
+          "battery_soc_entities": "SOC batterie",
+          "wan_telekom_entities": "Lien WAN Telekom",
+          "wan_vodafone_entities": "Lien WAN Vodafone",
+          "other_entities": "Autres alarmes/états",
+          "commonsight_enabled": "Activer le flux secondaire CommonSight",
+          "commonsight_base_url": "URL de base CommonSight",
+          "commonsight_scope": "Pays CommonSight",
+          "commonsight_home_region": "Région du domicile CommonSight (ex. DE-HH)",
+          "commonsight_radius_km": "Rayon CommonSight (km)",
+          "commonsight_layers": "Couches CommonSight"
+        }
       }
-    }},
+    },
     "abort": {
       "single_instance_allowed": "Une seule instance DEFCON Home est autorisée.",
       "already_configured": "DEFCON Home est déjà configuré."
     }
   },
-  "options": {"step": {"init": {
-    "title": "Options DEFCON Home",
-    "description": "Les modifications sont appliquées au moteur déterministe local.",
-    "data": {
-      "nina_entities": "Entités d'alerte NINA",
-      "dwd_current_entities": "Niveau DWD actuel",
-      "dwd_advance_entities": "Niveau DWD anticipé",
-      "flood_entities": "Niveaux d'alerte inondation",
-      "pegel_stage_entities": "Niveaux PEGELONLINE",
-      "uba_lqi_entities": "LQI numériques UBA",
-      "bfs_assessment_entities": "Évaluations ODL BfS",
-      "lightning_count_entities": "Compteurs Blitzortung",
-      "lightning_distance_entities": "Distances Blitzortung",
-      "noaa_entities": "Météo spatiale NOAA",
-      "fire_heat_entities": "Détection locale chaleur/incendie",
-      "fire_smoke_entities": "Détection locale fumée",
-      "grid_voltage_entities": "Tensions réseau L1/L2/L3",
-      "grid_alarm_entities": "Alarmes perte réseau",
-      "battery_soc_entities": "SOC batterie",
-      "wan_telekom_entities": "Lien WAN Telekom",
-      "wan_vodafone_entities": "Lien WAN Vodafone",
-      "other_entities": "Autres alarmes/états"
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options DEFCON Home",
+        "description": "Les modifications s'appliquent aux sources déterministes et au flux situationnel secondaire CommonSight.",
+        "data": {
+          "nina_entities": "Entités d'alerte NINA",
+          "dwd_current_entities": "Niveau DWD actuel",
+          "dwd_advance_entities": "Niveau DWD anticipé",
+          "flood_entities": "Niveaux d'alerte inondation",
+          "pegel_stage_entities": "Niveaux PEGELONLINE",
+          "uba_lqi_entities": "LQI numériques UBA",
+          "bfs_assessment_entities": "Évaluations ODL BfS",
+          "lightning_count_entities": "Compteurs Blitzortung",
+          "lightning_distance_entities": "Distances Blitzortung",
+          "noaa_entities": "Météo spatiale NOAA",
+          "fire_heat_entities": "Détection locale chaleur/incendie",
+          "fire_smoke_entities": "Détection locale fumée",
+          "grid_voltage_entities": "Tensions réseau L1/L2/L3",
+          "grid_alarm_entities": "Alarmes perte réseau",
+          "battery_soc_entities": "SOC batterie",
+          "wan_telekom_entities": "Lien WAN Telekom",
+          "wan_vodafone_entities": "Lien WAN Vodafone",
+          "other_entities": "Autres alarmes/états",
+          "commonsight_enabled": "Activer le flux secondaire CommonSight",
+          "commonsight_base_url": "URL de base CommonSight",
+          "commonsight_scope": "Pays CommonSight",
+          "commonsight_home_region": "Région du domicile CommonSight (ex. DE-HH)",
+          "commonsight_radius_km": "Rayon CommonSight (km)",
+          "commonsight_layers": "Couches CommonSight"
+        }
+      }
     }
-  }}}
+  }
 }
