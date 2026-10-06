@@ -11,6 +11,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .commonsight import CommonSightCoordinator
 from .const import (
     CARD_FILE,
     CARD_URL,
@@ -36,6 +37,11 @@ def _entry_data(hass: HomeAssistant) -> dict[str, Any]:
 def _context_key(entry: ConfigEntry) -> str:
     """Return runtime key for the independent context coordinator."""
     return f"{entry.entry_id}_context"
+
+
+def _commonsight_key(entry: ConfigEntry) -> str:
+    """Return runtime key for the CommonSight secondary coordinator."""
+    return f"{entry.entry_id}_commonsight"
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
@@ -71,6 +77,10 @@ async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     context = _entry_data(hass).get(_context_key(entry))
     if isinstance(context, ContextCoordinator):
         await context.async_request_refresh()
+
+    commonsight = _entry_data(hass).get(_commonsight_key(entry))
+    if isinstance(commonsight, CommonSightCoordinator):
+        await commonsight.async_request_refresh()
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -132,9 +142,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = DefconCoordinator(hass, entry)
     context = ContextCoordinator(hass, entry)
+    commonsight = CommonSightCoordinator(hass, entry, context)
 
     await coordinator.async_config_entry_first_refresh()
     await context.async_config_entry_first_refresh()
+    await commonsight.async_config_entry_first_refresh()
 
     coordinator.async_start()
     context.async_start()
@@ -142,6 +154,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = _entry_data(hass)
     runtime[entry.entry_id] = coordinator
     runtime[_context_key(entry)] = context
+    runtime[_commonsight_key(entry)] = commonsight
 
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -153,6 +166,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = _entry_data(hass)
     coordinator = runtime.get(entry.entry_id)
     context = runtime.get(_context_key(entry))
+    commonsight = runtime.get(_commonsight_key(entry))
 
     if isinstance(coordinator, DefconCoordinator):
         coordinator.async_stop()
@@ -163,6 +177,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         runtime.pop(entry.entry_id, None)
         runtime.pop(_context_key(entry), None)
+        runtime.pop(_commonsight_key(entry), None)
 
     try:
         remove_extra_js_url(hass, CARD_URL)
