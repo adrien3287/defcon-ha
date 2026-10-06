@@ -21,6 +21,8 @@ views:
             name: Infrastructure maison
           - entity: sensor.defcon_home_source_health
             name: Santé des sources
+          - entity: sensor.defcon_home_commonsight_health
+            name: CommonSight (validation secondaire)
           - entity: select.defcon_home_manual_override
             name: Override manuel
           - entity: button.defcon_home_refresh
@@ -283,6 +285,8 @@ views:
             name: Infrastructure
           - entity: sensor.defcon_home_source_health
             name: Santé des sources
+          - entity: sensor.defcon_home_commonsight_health
+            name: CommonSight (validation secondaire)
           - entity: select.defcon_home_manual_override
             name: Override
           - entity: button.defcon_home_refresh
@@ -301,12 +305,48 @@ views:
         entities:
           - entity: sensor.defcon_home_context_status
             name: Situation contextuelle
+          - entity: sensor.defcon_home_commonsight_health
+            name: CommonSight
           - entity: sensor.defcon_home_context_active_events
             name: Événements actifs
           - entity: sensor.defcon_home_context_recommended_defcon
             name: DEFCON recommandé (indicatif)
           - entity: sensor.defcon_home_lagezentrum_news_context
             name: Événement prioritaire
+
+      - type: markdown
+        title: État CommonSight
+        entity_id:
+          - sensor.defcon_home_commonsight_health
+        content: |
+          {% set e = 'sensor.defcon_home_commonsight_health' %}
+          {% set health = states(e) %}
+          {% set layers = state_attr(e, 'layer_health') or {} %}
+          {% set degraded = state_attr(e, 'degraded_layers') or [] %}
+          {% set partial = state_attr(e, 'partial_layers') or [] %}
+
+          **État : {{ health }}** · événements locaux injectés : {{ state_attr(e, 'nearby_event_count') | int(0) }}
+
+          {% if health == 'ok' %}
+          <ha-alert alert-type="success">Toutes les couches CommonSight configurées sont disponibles et fraîches.</ha-alert>
+          {% elif health == 'partial' %}
+          <ha-alert alert-type="warning">CommonSight répond, mais certaines sources signalent une couverture partielle.</ha-alert>
+          {% elif health == 'disabled' %}
+          <ha-alert alert-type="info">CommonSight est désactivé dans les options DEFCON Home.</ha-alert>
+          {% else %}
+          <ha-alert alert-type="error">CommonSight est dégradé ou indisponible. Ceci n'est pas interprété comme « aucune alerte ».</ha-alert>
+          {% endif %}
+
+          {% for name, data in layers.items() %}
+          - **{{ name }}** : {{ data.status }}{% if data.stale %} · **STALE**{% endif %} · {{ data.item_count | default(0) }} item(s)
+          {% endfor %}
+
+          {% if degraded | length > 0 %}
+          **Couches dégradées :** {{ degraded | join(', ') }}
+          {% endif %}
+          {% if partial | length > 0 %}
+          **Couverture partielle :** {{ partial | join(', ') }}
+          {% endif %}
 
       - type: entities
         title: Sources RSS Lagezentrum
