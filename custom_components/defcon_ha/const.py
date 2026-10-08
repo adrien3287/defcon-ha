@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.4.5"
+VERSION = "0.4.6"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -188,6 +188,21 @@ RSS_RECOMMENDED_SOURCES = [
         "url": "https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml",
         "tier": "local",
         "source_class": "public_media",
+    },
+    {
+        "name": "Harburg Aktuell",
+        "url": "https://harburg-aktuell.de/?format=feed&type=rss",
+        "tier": "local",
+        "source_class": "established_media",
+        "aliases": [
+            "https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss"
+        ],
+    },
+    {
+        "name": "MOPO",
+        "url": "https://www.mopo.de/index?lab_viewport=rss",
+        "tier": "local",
+        "source_class": "rapid_media",
     },
     {
         "name": "Tagesschau Inland",
