@@ -313,10 +313,10 @@ views:
         show_header_toggle: false
         entities:
           - entity: button.defcon_home_install_rss_sources
-            name: Installer / compléter les flux RSS
+            name: Installer / compléter les sources
 
       - type: markdown
-        title: État des sources RSS
+        title: État des sources d'information
         entity_id:
           - button.defcon_home_install_rss_sources
         content: |
@@ -329,9 +329,9 @@ views:
           **Sources recommandées : {{ configured }}/{{ total }} configurées**
 
           {% if missing == 0 %}
-          <ha-alert alert-type="success">Tous les flux RSS Lagezentrum recommandés sont installés.</ha-alert>
+          <ha-alert alert-type="success">Toutes les sources Lagezentrum recommandées sont configurées.</ha-alert>
           {% else %}
-          <ha-alert alert-type="warning">{{ missing }} flux RSS restent à installer. Appuie sur « Installer / compléter les flux RSS ».</ha-alert>
+          <ha-alert alert-type="warning">{{ missing }} source(s) restent à configurer. Appuie sur « Installer / compléter les flux RSS ».</ha-alert>
           {% endif %}
 
           {% if failed | length > 0 %}
@@ -341,7 +341,7 @@ views:
           {% endfor %}
           {% endif %}
 
-          Le flux CERT-Bund « Security Advisories » à fort volume reste volontairement exclu de l'installation automatique.
+          Harburg Aktuell est interrogé directement par DEFCON Home toutes les 5 minutes; aucune entrée Feedreader n'est nécessaire. Le flux CERT-Bund « Security Advisories » à fort volume reste volontairement exclu de l'installation automatique.
 
       - type: markdown
         title: Événements actifs
