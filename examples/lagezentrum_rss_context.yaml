@@ -1,4 +1,4 @@
-# DEFCON Home v0.4 - Feedreader -> Gemini context pipeline
+# DEFCON Home v0.4.6 - Feedreader -> Gemini context pipeline
 #
 # Prerequisite:
 #   ai_task.google_ai_task
@@ -17,7 +17,7 @@
 # - NEVER changes the deterministic DEFCON level directly.
 
 automation:
-  - alias: "Lagezentrum - Analyse RSS Gemini v0.4.4"
+  - alias: "Lagezentrum - Analyse RSS Gemini v0.4.6"
     id: lagezentrum_analyse_rss_gemini_v04
     mode: queued
     max: 50
@@ -36,6 +36,9 @@ automation:
               'https://www.presseportal.de/rss/dienststelle_82522.rss2': 'Feuerwehr Hamburg',
               'https://www.presseportal.de/rss/dienststelle_70254.rss2': 'Bundespolizei Hamburg',
               'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml': 'Tagesschau Hamburg',
+              'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss': 'Harburg Aktuell',
+              'https://harburg-aktuell.de/?format=feed&type=rss': 'Harburg Aktuell',
+              'https://www.mopo.de/index?lab_viewport=rss': 'MOPO',
               'https://www.tagesschau.de/inland/index~rss2.xml': 'Tagesschau Inland',
               'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130': 'BBK',
               'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml': 'BBK',
@@ -56,7 +59,10 @@ automation:
               'https://www.presseportal.de/rss/dienststelle_6337.rss2',
               'https://www.presseportal.de/rss/dienststelle_82522.rss2',
               'https://www.presseportal.de/rss/dienststelle_70254.rss2',
-              'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml'
+              'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
+              'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss',
+              'https://harburg-aktuell.de/?format=feed&type=rss',
+              'https://www.mopo.de/index?lab_viewport=rss'
             ] %}
             {% set strategic = [
               'https://www.tagesschau.de/ausland/index~rss2.xml',
@@ -83,6 +89,8 @@ automation:
             ] %}
             {% if feed_url in official %}official
             {% elif 'ndr.de' in feed_url or 'tagesschau.de' in feed_url %}public_media
+            {% elif 'harburg-aktuell.de' in feed_url %}established_media
+            {% elif 'mopo.de' in feed_url %}rapid_media
             {% else %}other
             {% endif %}
 
@@ -102,6 +110,9 @@ automation:
             'https://www.presseportal.de/rss/dienststelle_82522.rss2',
             'https://www.presseportal.de/rss/dienststelle_70254.rss2',
             'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
+            'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss',
+            'https://harburg-aktuell.de/?format=feed&type=rss',
+            'https://www.mopo.de/index?lab_viewport=rss',
             'https://www.tagesschau.de/inland/index~rss2.xml',
             'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130',
             'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml',
@@ -118,7 +129,7 @@ automation:
       - action: ai_task.generate_data
         data:
           entity_id: ai_task.google_ai_task
-          task_name: "Lagezentrum RSS v0.4.4"
+          task_name: "Lagezentrum RSS v0.4.6"
           instructions: >-
             Tu analyses une information pour un centre de situation domestique
             situé à Hamburg-Marmstorf.
@@ -127,6 +138,23 @@ automation:
             Nom: {{ source_name }}
             Niveau géographique de la source: {{ source_tier }}
             Classe de confiance de la source: {{ source_class }}
+
+            QUALITÉ ET VITESSE DE LA SOURCE
+            - source_class=official: information officielle, niveau de confiance
+              source le plus élevé.
+            - source_class=public_media ou established_media: média éditorial;
+              l'information peut être utilisée comme signal normal avec prudence.
+            - source_class=rapid_media: source choisie pour sa RAPIDITÉ, pas pour
+              son niveau de vérification. Traite l'information comme un signal
+              précoce potentiellement utile, mais ne présente jamais comme confirmé
+              un fait grave qui ne l'est pas dans le texte. Réduis
+              analysis_confidence si l'article repose sur des formulations comme
+              "selon nos informations", "aurait", "serait", rumeur ou témoignage
+              non confirmé. Une confirmation explicite par police, Feuerwehr,
+              autorité ou seconde source indépendante peut au contraire renforcer
+              la confiance.
+            - La rapidité d'une source ne doit jamais augmenter importance à elle
+              seule. L'importance dépend uniquement de l'impact opérationnel décrit.
 
             ARTICLE
             Titre:

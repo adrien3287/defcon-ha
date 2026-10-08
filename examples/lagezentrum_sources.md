@@ -1,4 +1,4 @@
-# Lagezentrum source plan (v0.4.2)
+# Lagezentrum source plan (v0.4.6)
 
 The context layer is intentionally broader than the deterministic DEFCON engine.
 These sources are consumed by Home Assistant Feedreader, classified by Gemini,
@@ -9,7 +9,7 @@ deterministic DEFCON level.
 
 ## Automatic installation
 
-In DEFCON Home 0.4.2, press:
+In DEFCON Home 0.4.6, press:
 
 `button.defcon_home_install_rss_sources`
 
@@ -31,6 +31,20 @@ Add these first:
   `https://www.presseportal.de/rss/dienststelle_70254.rss2`
 - Tagesschau Hamburg  
   `https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml`
+- Harburg Aktuell  
+  `https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss`  
+  clean equivalent recognized by DEFCON Home: `https://harburg-aktuell.de/?format=feed&type=rss`
+- MOPO  
+  `https://www.mopo.de/index?lab_viewport=rss`
+
+Harburg Aktuell is treated as `established_media`: local, close to Marmstorf/Harburg
+and useful for street-level incidents, closures, fire brigade activity and local
+infrastructure.
+
+MOPO is intentionally treated as `rapid_media`: it is included because it can
+publish very quickly, but a serious single-source claim is treated as an early
+lead rather than as confirmed fact until the article itself cites an authority or
+another independent source corroborates it.
 
 Typical use: fire/smoke, evacuation, police operations, rail disruption,
 local infrastructure failure and other events with a short path to Marmstorf.
@@ -82,10 +96,13 @@ short-term impact on Germany/Hamburg.
 
 The automation attaches source metadata before the AI call:
 
-- `official`: authorities such as Polizei, Feuerwehr, BBK, BNetzA and BSI.
-- `public_media`: NDR / Tagesschau.
-- `established_media`: reserved for additional curated media feeds.
-- `other`: unknown/unclassified sources.
+- `official` (95): authorities such as Polizei, Feuerwehr, BBK, BNetzA and BSI.
+- `public_media` (85): NDR / Tagesschau.
+- `established_media` (80): curated local/editorial media such as Harburg Aktuell.
+- `rapid_media` (65): speed-oriented media such as MOPO; useful for early warning
+  but assigned a lower deterministic trust baseline and explicitly handled as
+  potentially unconfirmed by the Gemini prompt.
+- `other` (60): unknown/unclassified sources.
 
 DEFCON Home combines this deterministic source class with the AI's
 `analysis_confidence` and corroboration by additional independent sources.

@@ -36,13 +36,14 @@ _STORAGE_VERSION = 1
 _TRUE_VALUES = {"true", "1", "yes", "on"}
 _ALLOWED_LIFECYCLE = {"new", "update", "resolved"}
 _ALLOWED_SOURCE_TIERS = {"local", "national", "strategic"}
-_ALLOWED_SOURCE_CLASSES = {"official", "public_media", "established_media", "other"}
+_ALLOWED_SOURCE_CLASSES = {"official", "public_media", "established_media", "rapid_media", "other"}
 _ALLOWED_RELEVANCE = {"direct", "potential", "none"}
 
 _SOURCE_CONFIDENCE = {
     "official": 95,
     "public_media": 85,
     "established_media": 80,
+    "rapid_media": 65,
     "other": 60,
 }
 
