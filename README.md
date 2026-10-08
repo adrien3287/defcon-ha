@@ -1,5 +1,13 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.9
+
+- fixes `Custom element doesn't exist: defcon-context-events-card` after upgrading from an older release;
+- the bundled frontend asset now uses a versioned URL (for example `/defcon-ha/defcon-ha-card-v0.4.9.js`) so Home Assistant/browser caches cannot keep serving the older JavaScript that only registered `defcon-ha-card`;
+- no dashboard YAML change is required from v0.4.8;
+- no Gemini/RSS automation change is required.
+
+
 ## 0.4.8
 
 - adds a manual archive action for active contextual events;

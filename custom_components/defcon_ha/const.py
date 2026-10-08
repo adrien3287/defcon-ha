@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.4.8"
+VERSION = "0.4.9"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -105,7 +105,7 @@ REFRESH_MINUTES = 5
 
 PLATFORMS = ["sensor", "select", "button"]
 
-CARD_URL = "/defcon-ha/defcon-ha-card.js"
+CARD_URL = f"/defcon-ha/defcon-ha-card-v{VERSION}.js"
 CARD_FILE = "frontend/defcon-ha-card.js"
 
 LEVEL_NAMES = {
