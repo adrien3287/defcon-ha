@@ -9,11 +9,11 @@
 # 3) re-fires that item as a normal "feedreader" bus event;
 # 4) the existing Lagezentrum Gemini automation processes it normally.
 #
-# Only the 13 curated DEFCON Home feeds are replayed.
+# Only the 15 curated DEFCON Home feeds are replayed.
 
 alias: "Lagezentrum - Charger les RSS actuels"
 description: >-
-  Rafraîchit les 13 Feedreader Lagezentrum puis rejoue le dernier article
+  Rafraîchit les 15 Feedreader Lagezentrum puis rejoue le dernier article
   actuellement exposé par chacun afin de remplir immédiatement le contexte.
 mode: single
 
@@ -26,6 +26,8 @@ sequence:
         - "https://www.presseportal.de/rss/dienststelle_82522.rss2"
         - "https://www.presseportal.de/rss/dienststelle_70254.rss2"
         - "https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml"
+        - "https://harburg-aktuell.de/?format=feed&type=rss"
+        - "https://www.mopo.de/index?lab_viewport=rss"
         - "https://www.tagesschau.de/inland/index~rss2.xml"
         - "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130"
         - "https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml"
