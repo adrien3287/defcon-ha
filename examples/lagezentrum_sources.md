@@ -96,13 +96,13 @@ short-term impact on Germany/Hamburg.
 
 The automation attaches source metadata before the AI call:
 
-- `official`: authorities such as Polizei, Feuerwehr, BBK, BNetzA and BSI.
-- `public_media`: NDR / Tagesschau.
-- `established_media`: curated local/editorial media such as Harburg Aktuell.
-- `rapid_media`: speed-oriented media such as MOPO; useful for early warning
+- `official` (95): authorities such as Polizei, Feuerwehr, BBK, BNetzA and BSI.
+- `public_media` (85): NDR / Tagesschau.
+- `established_media` (80): curated local/editorial media such as Harburg Aktuell.
+- `rapid_media` (65): speed-oriented media such as MOPO; useful for early warning
   but assigned a lower deterministic trust baseline and explicitly handled as
   potentially unconfirmed by the Gemini prompt.
-- `other`: unknown/unclassified sources.
+- `other` (60): unknown/unclassified sources.
 
 DEFCON Home combines this deterministic source class with the AI's
 `analysis_confidence` and corroboration by additional independent sources.
