@@ -42,7 +42,7 @@ Add these first:
 
 Harburg Aktuell is treated as `established_media`: local, close to Marmstorf/Harburg
 and useful for street-level incidents, closures, fire brigade activity and local
-infrastructure. On first start the internal poller can seed up to 10 current
+infrastructure. On first start the internal poller can seed up to 20 current
 articles; afterwards it emits only newly discovered article URLs and stores the
 seen list across Home Assistant restarts.
 
