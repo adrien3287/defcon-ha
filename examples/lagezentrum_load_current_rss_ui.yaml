@@ -26,6 +26,7 @@ sequence:
         - "https://www.presseportal.de/rss/dienststelle_82522.rss2"
         - "https://www.presseportal.de/rss/dienststelle_70254.rss2"
         - "https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml"
+        - "https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss"
         - "https://harburg-aktuell.de/?format=feed&type=rss"
         - "https://www.mopo.de/index?lab_viewport=rss"
         - "https://www.tagesschau.de/inland/index~rss2.xml"
