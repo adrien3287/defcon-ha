@@ -1,4 +1,4 @@
-# DEFCON Home v0.4 - UI-ready Home Assistant automation
+# DEFCON Home v0.4.6 - UI-ready Home Assistant automation
 # Paste the complete YAML below into:
 # Settings > Automations & scenes > Create automation > Edit in YAML
 #
@@ -99,7 +99,7 @@ actions:
         'https://www.presseportal.de/rss/dienststelle_70254.rss2',
         'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
         'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss',
-          'https://harburg-aktuell.de/?format=feed&type=rss',
+        'https://harburg-aktuell.de/?format=feed&type=rss',
         'https://www.mopo.de/index?lab_viewport=rss',
         'https://www.tagesschau.de/inland/index~rss2.xml',
         'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130',
