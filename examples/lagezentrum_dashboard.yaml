@@ -343,67 +343,9 @@ views:
 
           Harburg Aktuell est interrogé directement par DEFCON Home toutes les 5 minutes; aucune entrée Feedreader n'est nécessaire. Le flux CERT-Bund « Security Advisories » à fort volume reste volontairement exclu de l'installation automatique.
 
-      - type: markdown
+      - type: custom:defcon-context-events-card
+        entity: sensor.defcon_home_lagezentrum_news_context
         title: Événements actifs
-        entity_id:
-          - sensor.defcon_home_lagezentrum_news_context
-        content: |
-          {% set e = 'sensor.defcon_home_lagezentrum_news_context' %}
-          {% set events = state_attr(e, 'active_events') or [] %}
-
-          {% if events | length == 0 %}
-          <ha-alert alert-type="success">
-          Aucun événement contextuel actif.
-          </ha-alert>
-          {% endif %}
-
-          {% for item in events %}
-          {% set imp = item.importance | int(0) %}
-          {% if imp >= 3 %}
-          <ha-alert alert-type="error">
-          <b>IMPORTANT{% if item.protective_action %} — CONSIGNE DE PROTECTION{% endif %}</b>
-          </ha-alert>
-          {% elif imp == 2 %}
-          <ha-alert alert-type="warning"><b>À SURVEILLER</b></ha-alert>
-          {% else %}
-          <ha-alert alert-type="info"><b>INFORMATION</b></ha-alert>
-          {% endif %}
-
-          ### {{ item.title }}
-
-          {% if item.original_title and item.original_title != item.title %}
-          *Titre source : {{ item.original_title }}*
-          {% endif %}
-
-          **{{ item.category }} · {{ item.scope }} · confiance {{ item.confidence_score }}%**  
-          **Pertinence Marmstorf :** {{ item.direct_relevance }}  
-          **Zone :** {{ item.affected_area if item.affected_area else 'non précisée' }}  
-          **Sources :** {{ item.corroboration_count }}  
-          {% if item.event_timing_text %}
-          **Quand :** {{ item.event_timing_text }}  
-          {% elif item.event_start_at %}
-          **Date événement :** {{ item.event_start_at }}  
-          {% endif %}
-          **Valable jusqu’au :** {{ item.expires_at }}
-
-          {{ item.summary_fr }}
-
-          {% if item.reason %}
-          **Pourquoi c’est pertinent :** {{ item.reason }}
-          {% endif %}
-
-          {% if item.recommended_action and item.recommended_action != 'aucune' %}
-          **Action recommandée :** {{ item.recommended_action }}
-          {% endif %}
-
-          {% if item.link %}
-          [Ouvrir l’article source]({{ item.link }})
-          {% elif item.feed_url %}
-          [Ouvrir le flux source]({{ item.feed_url }}) *(lien article absent)*
-          {% endif %}
-
-          ---
-          {% endfor %}
 
       - type: markdown
         title: Événements à confirmer / périmés
