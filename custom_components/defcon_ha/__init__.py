@@ -24,6 +24,7 @@ from .const import (
 )
 from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
+from .harburg_aktuell import HarburgAktuellSource
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +37,11 @@ def _entry_data(hass: HomeAssistant) -> dict[str, Any]:
 def _context_key(entry: ConfigEntry) -> str:
     """Return runtime key for the independent context coordinator."""
     return f"{entry.entry_id}_context"
+
+
+def _harburg_key(entry: ConfigEntry) -> str:
+    """Return runtime key for the internal Harburg Aktuell source."""
+    return f"{entry.entry_id}_harburg_aktuell"
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
@@ -132,16 +138,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = DefconCoordinator(hass, entry)
     context = ContextCoordinator(hass, entry)
+    harburg = HarburgAktuellSource(hass, entry)
 
     await coordinator.async_config_entry_first_refresh()
     await context.async_config_entry_first_refresh()
 
     coordinator.async_start()
     context.async_start()
+    harburg.async_start()
 
     runtime = _entry_data(hass)
     runtime[entry.entry_id] = coordinator
     runtime[_context_key(entry)] = context
+    runtime[_harburg_key(entry)] = harburg
 
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -153,16 +162,20 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = _entry_data(hass)
     coordinator = runtime.get(entry.entry_id)
     context = runtime.get(_context_key(entry))
+    harburg = runtime.get(_harburg_key(entry))
 
     if isinstance(coordinator, DefconCoordinator):
         coordinator.async_stop()
     if isinstance(context, ContextCoordinator):
         context.async_stop()
+    if isinstance(harburg, HarburgAktuellSource):
+        harburg.async_stop()
 
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         runtime.pop(entry.entry_id, None)
         runtime.pop(_context_key(entry), None)
+        runtime.pop(_harburg_key(entry), None)
 
     try:
         remove_extra_js_url(hass, CARD_URL)
