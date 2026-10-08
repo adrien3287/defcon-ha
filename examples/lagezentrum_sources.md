@@ -13,9 +13,12 @@ In DEFCON Home 0.4.6, press:
 
 `button.defcon_home_install_rss_sources`
 
-The integration creates every missing recommended Feedreader config entry via
-Home Assistant's config-flow API. Existing sources are skipped. The optional
-high-volume CERT-Bund security-advisory feed is not installed automatically.
+The integration configures every missing recommended Feedreader source through
+Home Assistant's config-flow API. Harburg Aktuell is the exception: its current
+site no longer exposes a Feedreader-compatible RSS channel, so DEFCON Home polls
+the public homepage directly every 5 minutes and emits the same internal
+`feedreader` event shape. Existing sources are skipped. The optional high-volume
+CERT-Bund security-advisory feed is not installed automatically.
 
 ## Tier 1 - Local / Hamburg
 
@@ -32,14 +35,16 @@ Add these first:
 - Tagesschau Hamburg  
   `https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml`
 - Harburg Aktuell  
-  `https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss`  
-  clean equivalent recognized by DEFCON Home: `https://harburg-aktuell.de/?format=feed&type=rss`
+  `https://harburg-aktuell.de/` — polled directly by DEFCON Home (5-minute interval);
+  no Feedreader entry is required.
 - MOPO  
   `https://www.mopo.de/index?lab_viewport=rss`
 
 Harburg Aktuell is treated as `established_media`: local, close to Marmstorf/Harburg
 and useful for street-level incidents, closures, fire brigade activity and local
-infrastructure.
+infrastructure. On first start the internal poller can seed up to 10 current
+articles; afterwards it emits only newly discovered article URLs and stores the
+seen list across Home Assistant restarts.
 
 MOPO is intentionally treated as `rapid_media`: it is included because it can
 publish very quickly, but a serious single-source claim is treated as an early
