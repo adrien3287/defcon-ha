@@ -6,10 +6,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.core import HomeAssistant, ServiceCall
 
 from .const import (
     CARD_FILE,
@@ -21,6 +24,7 @@ from .const import (
     CONF_FIRE_SMOKE_ENTITIES,
     DOMAIN,
     PLATFORMS,
+    SERVICE_ARCHIVE_CONTEXT_EVENT,
 )
 from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
@@ -152,6 +156,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime[_context_key(entry)] = context
     runtime[_harburg_key(entry)] = harburg
 
+    async def _async_archive_context_service(call: ServiceCall) -> None:
+        """Archive one contextual event selected from the dashboard."""
+        event_key = str(call.data["event_key"])
+        active_context = _entry_data(hass).get(_context_key(entry))
+        if not isinstance(active_context, ContextCoordinator):
+            _LOGGER.warning(
+                "Cannot archive context event %s: context coordinator unavailable",
+                event_key,
+            )
+            return
+        archived = await active_context.async_archive_event(event_key)
+        if not archived:
+            _LOGGER.warning(
+                "Cannot archive context event %s: event is no longer active",
+                event_key,
+            )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_ARCHIVE_CONTEXT_EVENT):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_ARCHIVE_CONTEXT_EVENT,
+            _async_archive_context_service,
+            schema=vol.Schema({vol.Required("event_key"): cv.string}),
+        )
+
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -176,6 +205,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         runtime.pop(entry.entry_id, None)
         runtime.pop(_context_key(entry), None)
         runtime.pop(_harburg_key(entry), None)
+        if hass.services.has_service(DOMAIN, SERVICE_ARCHIVE_CONTEXT_EVENT):
+            hass.services.async_remove(DOMAIN, SERVICE_ARCHIVE_CONTEXT_EVENT)
 
     try:
         remove_extra_js_url(hass, CARD_URL)

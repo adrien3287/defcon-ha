@@ -1,5 +1,15 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.7
+
+- adds a manual archive action for active contextual events;
+- new service `defcon_ha.archive_context_event` moves a selected active/stale event to recent history without deleting its record;
+- the Lagezentrum dashboard active-events card now shows an **Archiver** link beside the source link for every active event;
+- archiving marks the item `resolved`, records `resolved_at`, `resolution_reason=manual_archive` and `archived_manually=true`, then removes it immediately from the active list;
+- the operation is context-only and never changes the deterministic DEFCON engine;
+- the Gemini/feedreader automation is unchanged in v0.4.7.
+
+
 ## 0.4.6
 
 - adds Harburg Aktuell as a recommended local Harburg/Marmstorf context source;

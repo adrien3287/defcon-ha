@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DOMAIN = "defcon_ha"
 NAME = "DEFCON Home"
-VERSION = "0.4.6"
+VERSION = "0.4.7"
 
 CONF_NINA_ENTITIES = "nina_entities"
 CONF_DWD_ENTITIES = "dwd_entities"  # legacy v0.2 key
@@ -126,6 +126,7 @@ LEVEL_COLORS = {
 
 EVENT_LEVEL_CHANGED = "defcon_ha_level_changed"
 EVENT_RSS_ANALYZED = "lagezentrum_rss_analyzed"
+SERVICE_ARCHIVE_CONTEXT_EVENT = "archive_context_event"
 
 # Context engine. This layer never changes deterministic DEFCON by itself.
 CONTEXT_REFRESH_MINUTES = 5

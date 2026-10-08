@@ -308,3 +308,220 @@ if (!window.customCards.some((card) => card.type === "defcon-ha-card")) {
     },
   });
 }
+
+
+class DefconContextEventsCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._hass = undefined;
+    this._archiving = new Set();
+  }
+
+  setConfig(config) {
+    this._config = {
+      entity: "sensor.defcon_home_lagezentrum_news_context",
+      title: "Événements actifs",
+      ...config,
+    };
+    if (!this._config.entity) {
+      throw new Error("DEFCON context events card requires an entity");
+    }
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  getCardSize() {
+    const state = this._hass?.states?.[this._config?.entity];
+    const events = Array.isArray(state?.attributes?.active_events)
+      ? state.attributes.active_events
+      : [];
+    return Math.max(2, Math.min(12, 2 + events.length * 3));
+  }
+
+  _escape(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  _eventHtml(item) {
+    const importance = Number(item?.importance || 0);
+    const statusClass = importance >= 3 ? "critical" : importance === 2 ? "watch" : "info";
+    const statusText =
+      importance >= 3
+        ? item?.protective_action
+          ? "IMPORTANT — CONSIGNE DE PROTECTION"
+          : "IMPORTANT"
+        : importance === 2
+          ? "À SURVEILLER"
+          : "INFORMATION";
+
+    const originalTitle =
+      item?.original_title && item.original_title !== item.title
+        ? `<div class="original">Titre source : ${this._escape(item.original_title)}</div>`
+        : "";
+
+    const timing = item?.event_timing_text
+      ? `<div><b>Quand :</b> ${this._escape(item.event_timing_text)}</div>`
+      : item?.event_start_at
+        ? `<div><b>Date événement :</b> ${this._escape(item.event_start_at)}</div>`
+        : "";
+
+    const sourceLink = item?.link
+      ? `<a class="source-link" href="${this._escape(item.link)}" target="_blank" rel="noopener noreferrer">Ouvrir l’article source</a>`
+      : item?.feed_url
+        ? `<a class="source-link" href="${this._escape(item.feed_url)}" target="_blank" rel="noopener noreferrer">Ouvrir la source</a>`
+        : "";
+
+    const archiveLabel = this._archiving.has(item?.event_key)
+      ? "Archivage…"
+      : "Archiver";
+
+    return `
+      <section class="event">
+        <div class="status ${statusClass}">${statusText}</div>
+        <h3>${this._escape(item?.title || "Événement sans titre")}</h3>
+        ${originalTitle}
+        <div class="meta">
+          <b>${this._escape(item?.category || "other")} · ${this._escape(item?.scope || "")} · confiance ${this._escape(item?.confidence_score ?? 0)}%</b>
+          <div><b>Pertinence Marmstorf :</b> ${this._escape(item?.direct_relevance || "potential")}</div>
+          <div><b>Zone :</b> ${this._escape(item?.affected_area || "non précisée")}</div>
+          <div><b>Sources :</b> ${this._escape(item?.corroboration_count ?? 1)}</div>
+          ${timing}
+          <div><b>Valable jusqu’au :</b> ${this._escape(item?.expires_at || "")}</div>
+        </div>
+        ${item?.summary_fr ? `<p>${this._escape(item.summary_fr)}</p>` : ""}
+        ${item?.reason ? `<p><b>Pourquoi c’est pertinent :</b> ${this._escape(item.reason)}</p>` : ""}
+        ${
+          item?.recommended_action && item.recommended_action !== "aucune"
+            ? `<p><b>Action recommandée :</b> ${this._escape(item.recommended_action)}</p>`
+            : ""
+        }
+        <div class="actions">
+          ${sourceLink}
+          <button
+            class="archive-link"
+            data-event-key="${this._escape(item?.event_key || "")}"
+            ${this._archiving.has(item?.event_key) ? "disabled" : ""}
+          >${archiveLabel}</button>
+        </div>
+      </section>
+    `;
+  }
+
+  async _archive(eventKey, title) {
+    if (!eventKey || !this._hass || this._archiving.has(eventKey)) return;
+    const confirmed = window.confirm(
+      `Archiver « ${title || "cet événement"} » vers l’historique ?`
+    );
+    if (!confirmed) return;
+
+    this._archiving.add(eventKey);
+    this._render();
+    try {
+      await this._hass.callService("defcon_ha", "archive_context_event", {
+        event_key: eventKey,
+      });
+    } finally {
+      this._archiving.delete(eventKey);
+      this._render();
+    }
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._hass || !this._config?.entity) return;
+    const state = this._hass.states?.[this._config.entity];
+
+    if (!state) {
+      this.shadowRoot.innerHTML = `
+        <ha-card>
+          <div class="error">Entity ${this._escape(this._config.entity)} not found</div>
+        </ha-card>`;
+      return;
+    }
+
+    const events = Array.isArray(state.attributes?.active_events)
+      ? state.attributes.active_events
+      : [];
+
+    const body = events.length
+      ? events.map((item) => this._eventHtml(item)).join("")
+      : '<div class="empty">Aucun événement contextuel actif.</div>';
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: block; }
+        ha-card { overflow: hidden; }
+        .header { padding: 14px 16px 10px; font-size: 16px; font-weight: 650; }
+        .body { padding: 0 16px 16px; }
+        .event { padding: 12px 0 14px; border-top: 1px solid var(--divider-color); }
+        .event:first-child { border-top: 0; }
+        .status { display: inline-block; border-radius: 8px; padding: 5px 8px; font-size: 12px; font-weight: 750; }
+        .status.critical { background: color-mix(in srgb, var(--error-color, #db4437) 16%, transparent); color: var(--error-color, #db4437); }
+        .status.watch { background: color-mix(in srgb, var(--warning-color, #f9a825) 18%, transparent); color: var(--warning-color, #b06f00); }
+        .status.info { background: var(--secondary-background-color); }
+        h3 { margin: 10px 0 4px; font-size: 17px; line-height: 1.3; }
+        .original { font-style: italic; opacity: .72; font-size: 13px; margin-bottom: 8px; }
+        .meta { font-size: 13px; line-height: 1.55; }
+        p { font-size: 14px; line-height: 1.45; margin: 10px 0; }
+        .actions { display: flex; gap: 14px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+        .source-link, .archive-link {
+          color: var(--primary-color);
+          font: inherit;
+          font-size: 13px;
+          font-weight: 650;
+          text-decoration: none;
+        }
+        .source-link:hover, .archive-link:hover { text-decoration: underline; }
+        .archive-link {
+          border: 0;
+          background: transparent;
+          padding: 0;
+          cursor: pointer;
+        }
+        .archive-link[disabled] { opacity: .5; cursor: wait; text-decoration: none; }
+        .empty {
+          margin: 4px 0;
+          padding: 12px;
+          border-radius: 10px;
+          background: color-mix(in srgb, var(--success-color, #43a047) 12%, transparent);
+        }
+        .error { padding: 16px; color: var(--error-color); }
+      </style>
+      <ha-card>
+        <div class="header">${this._escape(this._config.title)}</div>
+        <div class="body">${body}</div>
+      </ha-card>
+    `;
+
+    this.shadowRoot.querySelectorAll(".archive-link").forEach((button) => {
+      button.addEventListener("click", () => {
+        const eventKey = button.dataset.eventKey || "";
+        const item = events.find((candidate) => candidate?.event_key === eventKey);
+        this._archive(eventKey, item?.title || "");
+      });
+    });
+  }
+}
+
+if (!customElements.get("defcon-context-events-card")) {
+  customElements.define("defcon-context-events-card", DefconContextEventsCard);
+}
+
+if (!window.customCards.some((card) => card.type === "defcon-context-events-card")) {
+  window.customCards.push({
+    type: "defcon-context-events-card",
+    name: "DEFCON Context Events",
+    description: "Active Lagezentrum context events with manual archive action.",
+    preview: true,
+  });
+}

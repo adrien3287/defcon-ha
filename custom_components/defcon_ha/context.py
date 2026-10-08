@@ -226,6 +226,45 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             await self._async_save()
             self.async_set_updated_data(self._snapshot(now))
 
+    async def async_archive_event(
+        self,
+        event_key: str,
+        *,
+        reason: str = "manual_archive",
+    ) -> bool:
+        """Move one active/stale contextual event to recent history."""
+        if not self._loaded:
+            await self._async_load()
+
+        normalized_key = _slug(_clean_text(event_key, max_len=128))
+        if not normalized_key:
+            return False
+
+        index = next(
+            (
+                idx
+                for idx, item in enumerate(self._events)
+                if item.get("event_key") == normalized_key
+            ),
+            None,
+        )
+        if index is None:
+            return False
+
+        now = dt_util.utcnow()
+        item = self._events.pop(index)
+        item["status"] = "resolved"
+        item["lifecycle"] = "resolved"
+        item["resolved_at"] = now.isoformat()
+        item["last_seen"] = now.isoformat()
+        item["resolution_reason"] = reason
+        item["archived_manually"] = True
+        self._append_history(item)
+
+        await self._async_save()
+        self.async_set_updated_data(self._snapshot(now))
+        return True
+
     def _normalize(self, data: dict[str, Any], now: datetime) -> dict[str, Any]:
         category = (
             _slug(_clean_text(data.get("category", "other"), max_len=64))

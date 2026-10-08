@@ -1,0 +1,11 @@
+archive_context_event:
+  name: Archive context event
+  description: Move one active or stale contextual event to recent history.
+  fields:
+    event_key:
+      name: Event key
+      description: Stable event key exposed by the Lagezentrum context sensor.
+      required: true
+      example: hamburg-steinwerder-port-fire
+      selector:
+        text:
