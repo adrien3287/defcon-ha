@@ -32,7 +32,8 @@ Add these first:
 - Tagesschau Hamburg  
   `https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml`
 - Harburg Aktuell  
-  `https://harburg-aktuell.de/?format=feed&type=rss`
+  `https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss`  
+  clean equivalent recognized by DEFCON Home: `https://harburg-aktuell.de/?format=feed&type=rss`
 - MOPO  
   `https://www.mopo.de/index?lab_viewport=rss`
 
