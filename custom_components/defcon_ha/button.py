@@ -93,7 +93,9 @@ class DefconInstallRssSourcesButton(ButtonEntity):
 
     @staticmethod
     def _source_is_present(source: dict[str, Any], existing_urls: set[str]) -> bool:
-        """Return true if the canonical URL or one of its known aliases exists."""
+        """Return true when a recommended source is available."""
+        if source.get("mode") == "internal_web":
+            return True
         candidates = {str(source["url"]).strip()}
         candidates.update(
             str(alias).strip()
@@ -144,6 +146,10 @@ class DefconInstallRssSourcesButton(ButtonEntity):
             for source in RSS_RECOMMENDED_SOURCES:
                 name = str(source["name"])
                 url = str(source["url"])
+
+                if source.get("mode") == "internal_web":
+                    already_present.append(name)
+                    continue
 
                 if self._source_is_present(source, existing_urls):
                     already_present.append(name)
