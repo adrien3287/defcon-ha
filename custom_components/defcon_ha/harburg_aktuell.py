@@ -38,12 +38,12 @@ HARBURG_INITIAL_ARTICLE_LIMIT = 10
 HARBURG_SEEN_LIMIT = 250
 HARBURG_STORAGE_VERSION = 1
 
-_ARTICLE_PATH_RE = re.compile(r"/[^?#]+-\\d+/?$")
+_ARTICLE_PATH_RE = re.compile(r"/[^?#]+-\d+/?$")
 _DATE_RE = re.compile(
-    r"\\b(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag),?\\s+"
-    r"\\d{1,2}\\.\\s+[A-Za-zÄÖÜäöüß]+\\s+20\\d{2},\\s+\\d{1,2}:\\d{2}\\b"
+    r"\b(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonnabend|Sonntag),?\s+"
+    r"\d{1,2}\.\s+[A-Za-zÄÖÜäöüß]+\s+20\d{2},\s+\d{1,2}:\d{2}\b"
 )
-_SPACE_RE = re.compile(r"\\s+")
+_SPACE_RE = re.compile(r"\s+")
 
 
 def _clean_text(value: str, limit: int = 4000) -> str:
