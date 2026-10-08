@@ -380,7 +380,7 @@ views:
           **{{ item.title }}**  
           {{ item.category }} · {{ item.status }} · importance {{ item.importance }}/3  
           {% if item.resolved_at %}Clôturé : {{ item.resolved_at }}{% endif %}
-          {% if item.resolution_reason %} · {{ item.resolution_reason }}{% endif %}
+          {% if item.resolution_reason == 'manual_archive' %} · archivé manuellement{% elif item.resolution_reason %} · {{ item.resolution_reason }}{% endif %}
 
           {% endfor %}
           {% endif %}
