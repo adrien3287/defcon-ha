@@ -4,11 +4,11 @@
 
 - adds Harburg Aktuell as a recommended local Harburg/Marmstorf context source;
 - adds MOPO as a recommended rapid local-news source;
-- the one-click Feedreader installer now targets 15 recommended feeds;
+- the recommended source set now contains 15 sources: 14 Feedreader feeds plus Harburg Aktuell, which is polled directly by DEFCON Home every 5 minutes because the redesigned site no longer exposes a Feedreader-compatible RSS channel;
 - Harburg Aktuell is classified as `established_media` with deterministic source baseline 80;
 - MOPO is classified as `rapid_media` with deterministic source baseline 65;
 - the Gemini prompt explicitly treats `rapid_media` as an early-warning lead: speed does not imply verification, uncertainty lowers `analysis_confidence`, and serious claims should not be presented as confirmed without explicit authority/corroboration;
-- the current-RSS one-shot replay script includes both new feeds;
+- the current-RSS one-shot replay script includes MOPO; Harburg Aktuell is seeded and monitored by the internal poller;
 - deterministic DEFCON rules remain unchanged.
 
 
@@ -373,9 +373,11 @@ Already configured URLs are skipped. If a feed cannot be added, installation
 continues with the remaining sources and the failure is exposed in the button
 attributes.
 
-The button currently installs 15 curated feeds across local, national and
-strategic tiers. The high-volume CERT-Bund security-advisory feed remains
-excluded by design.
+The button reports 15 recommended sources across local, national and strategic
+tiers. Fourteen are normal Feedreader entries. Harburg Aktuell is provided by
+DEFCON Home's internal 5-minute web poller and therefore counts as configured
+without creating a Feedreader entry. The high-volume CERT-Bund
+security-advisory feed remains excluded by design.
 
 ### Source tiers
 
