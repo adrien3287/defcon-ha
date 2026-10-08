@@ -36,6 +36,7 @@ automation:
               'https://www.presseportal.de/rss/dienststelle_82522.rss2': 'Feuerwehr Hamburg',
               'https://www.presseportal.de/rss/dienststelle_70254.rss2': 'Bundespolizei Hamburg',
               'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml': 'Tagesschau Hamburg',
+              'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss': 'Harburg Aktuell',
               'https://harburg-aktuell.de/?format=feed&type=rss': 'Harburg Aktuell',
               'https://www.mopo.de/index?lab_viewport=rss': 'MOPO',
               'https://www.tagesschau.de/inland/index~rss2.xml': 'Tagesschau Inland',
@@ -59,6 +60,7 @@ automation:
               'https://www.presseportal.de/rss/dienststelle_82522.rss2',
               'https://www.presseportal.de/rss/dienststelle_70254.rss2',
               'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
+              'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss',
               'https://harburg-aktuell.de/?format=feed&type=rss',
               'https://www.mopo.de/index?lab_viewport=rss'
             ] %}
@@ -108,7 +110,8 @@ automation:
             'https://www.presseportal.de/rss/dienststelle_82522.rss2',
             'https://www.presseportal.de/rss/dienststelle_70254.rss2',
             'https://www.tagesschau.de/inland/regional/hamburg/index~rss2.xml',
-            'https://harburg-aktuell.de/?format=feed&type=rss',
+            'https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss',
+          'https://harburg-aktuell.de/?format=feed&type=rss',
             'https://www.mopo.de/index?lab_viewport=rss',
             'https://www.tagesschau.de/inland/index~rss2.xml',
             'https://www.bbk.bund.de/DE/Infothek/Unsere-Meldungen/RSSNewsfeed/_functions/rssnewsfeed-bbk.xml?nn=20130',
