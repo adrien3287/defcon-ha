@@ -191,11 +191,11 @@ RSS_RECOMMENDED_SOURCES = [
     },
     {
         "name": "Harburg Aktuell",
-        "url": "https://harburg-aktuell.de/?format=feed&type=rss",
+        "url": "https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss",
         "tier": "local",
         "source_class": "established_media",
         "aliases": [
-            "https://harburg-aktuell.de/?cdnbuster=770&format=feed&type=rss"
+            "https://harburg-aktuell.de/?format=feed&type=rss"
         ],
     },
     {
