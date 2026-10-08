@@ -1,5 +1,17 @@
 # DEFCON Home for Home Assistant
 
+## 0.4.6
+
+- adds Harburg Aktuell as a recommended local Harburg/Marmstorf context source;
+- adds MOPO as a recommended rapid local-news source;
+- the one-click Feedreader installer now targets 15 recommended feeds;
+- Harburg Aktuell is classified as `established_media` with deterministic source baseline 80;
+- MOPO is classified as `rapid_media` with deterministic source baseline 65;
+- the Gemini prompt explicitly treats `rapid_media` as an early-warning lead: speed does not imply verification, uncertainty lowers `analysis_confidence`, and serious claims should not be presented as confirmed without explicit authority/corroboration;
+- the current-RSS one-shot replay script includes both new feeds;
+- deterministic DEFCON rules remain unchanged.
+
+
 ## 0.4.5
 
 - the 2026-10-04 RSS seed snapshot now contains verified direct article URLs for 104 of 107 replayed items;
@@ -340,6 +352,7 @@ Source classes have deterministic trust baselines:
 - official: 95;
 - public media: 85;
 - established media: 80;
+- rapid media: 65;
 - other: 60.
 
 The context engine combines the source baseline with
@@ -360,7 +373,7 @@ Already configured URLs are skipped. If a feed cannot be added, installation
 continues with the remaining sources and the failure is exposed in the button
 attributes.
 
-The button currently installs 13 curated feeds across local, national and
+The button currently installs 15 curated feeds across local, national and
 strategic tiers. The high-volume CERT-Bund security-advisory feed remains
 excluded by design.
 
@@ -369,7 +382,7 @@ excluded by design.
 The example source plan in `examples/lagezentrum_sources.md` uses three tiers:
 
 1. **Local/Hamburg** — NDR Hamburg, Polizei Hamburg, Feuerwehr Hamburg,
-   Bundespolizei Hamburg and Tagesschau Hamburg.
+   Bundespolizei Hamburg, Tagesschau Hamburg, Harburg Aktuell and MOPO.
 2. **Germany / critical infrastructure** — Tagesschau Inland, BBK,
    Bundesnetzagentur and BSI/BürgerCERT.
 3. **Strategic Europe/world** — Tagesschau Europa, Ausland and Wirtschaft,
