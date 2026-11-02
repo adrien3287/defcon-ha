@@ -29,6 +29,7 @@ from .const import (
 from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
 from .harburg_aktuell import HarburgAktuellSource
+from .official_sources import OfficialSourcesCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +42,10 @@ def _entry_data(hass: HomeAssistant) -> dict[str, Any]:
 def _context_key(entry: ConfigEntry) -> str:
     """Return runtime key for the independent context coordinator."""
     return f"{entry.entry_id}_context"
+
+
+def _official_key(entry: ConfigEntry) -> str:
+    return f"{entry.entry_id}_official"
 
 
 def _harburg_key(entry: ConfigEntry) -> str:
@@ -81,6 +86,10 @@ async def _async_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     context = _entry_data(hass).get(_context_key(entry))
     if isinstance(context, ContextCoordinator):
         await context.async_request_refresh()
+
+    official = _entry_data(hass).get(_official_key(entry))
+    if isinstance(official, OfficialSourcesCoordinator):
+        await official.async_request_refresh()
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -142,10 +151,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = DefconCoordinator(hass, entry)
     context = ContextCoordinator(hass, entry)
+    official = OfficialSourcesCoordinator(hass, entry)
     coordinator.context_coordinator = context
+    coordinator.official_coordinator = official
     harburg = HarburgAktuellSource(hass, entry)
 
     await context.async_config_entry_first_refresh()
+    await official.async_config_entry_first_refresh()
     await coordinator.async_config_entry_first_refresh()
 
     coordinator.async_start()
@@ -155,6 +167,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = _entry_data(hass)
     runtime[entry.entry_id] = coordinator
     runtime[_context_key(entry)] = context
+    runtime[_official_key(entry)] = official
     runtime[_harburg_key(entry)] = harburg
 
     async def _async_archive_context_service(call: ServiceCall) -> None:
@@ -193,6 +206,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         )
     )
+    entry.async_on_unload(
+        official.async_add_listener(
+            lambda: entry.async_create_task(
+                hass, coordinator.async_request_refresh(),
+                "DEFCON Home official sources refresh",
+            )
+        )
+    )
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -203,6 +224,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = _entry_data(hass)
     coordinator = runtime.get(entry.entry_id)
     context = runtime.get(_context_key(entry))
+    official = runtime.get(_official_key(entry))
     harburg = runtime.get(_harburg_key(entry))
 
     if isinstance(coordinator, DefconCoordinator):
@@ -216,6 +238,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         runtime.pop(entry.entry_id, None)
         runtime.pop(_context_key(entry), None)
+        runtime.pop(_official_key(entry), None)
         runtime.pop(_harburg_key(entry), None)
         if hass.services.has_service(DOMAIN, SERVICE_ARCHIVE_CONTEXT_EVENT):
             hass.services.async_remove(DOMAIN, SERVICE_ARCHIVE_CONTEXT_EVENT)
