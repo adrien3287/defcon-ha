@@ -142,10 +142,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = DefconCoordinator(hass, entry)
     context = ContextCoordinator(hass, entry)
+    coordinator.context_coordinator = context
     harburg = HarburgAktuellSource(hass, entry)
 
-    await coordinator.async_config_entry_first_refresh()
     await context.async_config_entry_first_refresh()
+    await coordinator.async_config_entry_first_refresh()
 
     coordinator.async_start()
     context.async_start()
@@ -181,6 +182,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             schema=vol.Schema({vol.Required("event_key"): cv.string}),
         )
 
+    # Incoming Feedreader/Gemini events update the real DEFCON immediately,
+    # rather than waiting for the next five-minute sensor polling interval.
+    entry.async_on_unload(
+        context.async_add_listener(
+            lambda: entry.async_create_task(
+                hass,
+                coordinator.async_request_refresh(),
+                "DEFCON Home RSS context refresh",
+            )
+        )
+    )
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
