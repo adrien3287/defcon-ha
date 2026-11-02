@@ -1,3 +1,43 @@
+## Version 0.5.0 — Lagezentrum : sources critiques et DEFCON cumulatif
+
+Le niveau `sensor.defcon_home_level` prend désormais en compte les phénomènes
+**confirmés, actifs et indépendants** provenant de l'analyse RSS/Gemini et des
+collecteurs d'opérateurs. La déduplication suit la grille familiale :
+- danger direct confirmé avec consigne de protection locale : DEFCON 1 ;
+- crise majeure, deux signaux sérieux, ou un sérieux + deux faibles : DEFCON 2 ;
+- un sérieux ou trois faibles indépendants : DEFCON 3 ;
+- un faible : DEFCON 4 ; aucun : DEFCON 5.
+
+**Nouvelles sources** : données journalières Bundesnetzagentur sur le niveau
+de stockage du gaz allemand et la stabilité de l'approvisionnement (vérification
+toutes les 6 h), pages d'incidents Hamburg Wasser et Hamburger Energienetze
+(vérification toutes les 10 min), et médianes Diesel/E5/E10 des stations configurées
+dans l'intégration HA native **Tankerkönig** (mise à jour du Lagezentrum à 10 min,
+la source Tankerkönig étant actualisée toutes les 30 min).
+
+Installer/configurer **Tankerkönig** dans Paramètres > Appareils et services,
+avec au moins trois stations locales pour qualifier une hausse des prix ;
+l'utilisateur doit obtenir sa clé API auprès de Tankerkönig. Sans cette
+intégration, les prix restent indisponibles mais le reste fonctionne.
+
+**Important : remplacer l'automatisation Feedreader -> Gemini** par
+`examples/lagezentrum_rss_context.yaml` ou par la variante
+`examples/lagezentrum_rss_context_ui.yaml`, en conservant l'automatisation
+préférée et son identifiant. Les anciennes analyses RSS ne comportent pas
+`signal_class` / `signal_confirmed` : elles restent visibles, mais ne sont
+pas comptées avant leur réanalyse. Ne pas activer les deux variantes en parallèle.
+
+Une source inaccessible prend le statut `unknown`, sans prétendre qu'aucune
+perturbation n'existe. Les seuils de détection initiaux sont documentés :
+gaz < 65 % et anomalie officielle par rapport aux années précédentes donne
+un **signal faible** (pas une crise), prix local médian +25 % sur 7 jours
+avec au moins trois stations donne un signal faible (pas une pénurie).
+
+Les quatre blocs sont intégrés directement dans Home Assistant. **Aucun JSON
+externe n'est lu et aucune reprise d'un ancien flux GitHub n'est faite.**
+
+---
+
 # DEFCON Home for Home Assistant
 
 ## 0.4.8
