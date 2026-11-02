@@ -249,7 +249,7 @@ class ContextActiveEventsSensor(_ContextBaseSensor):
 
 
 class ContextRecommendedDefconSensor(_ContextBaseSensor):
-    """Indicative DEFCON recommendation from the context layer only."""
+    """Aggregated DEFCON from confirmed, independent RSS phenomena."""
 
     _attr_name = "Context recommended DEFCON"
     _attr_icon = "mdi:shield-search"
@@ -266,8 +266,12 @@ class ContextRecommendedDefconSensor(_ContextBaseSensor):
     def extra_state_attributes(self) -> dict:
         top = self.coordinator.data.top_event or {}
         return {
-            "advisory_only": True,
-            "affects_defcon": False,
+            "advisory_only": False,
+            "affects_defcon": True,
+            "weak_signal_count": self.coordinator.data.weak_signal_count,
+            "serious_signal_count": self.coordinator.data.serious_signal_count,
+            "counted_signal_keys": [e.get("phenomenon_key") for e in self.coordinator.data.counted_signals],
+            "excluded_signal_count": self.coordinator.data.excluded_signal_count,
             "top_event_key": top.get("event_key", ""),
             "top_event_title": top.get("title", ""),
             "highest_importance": self.coordinator.data.highest_importance,
@@ -329,7 +333,11 @@ class LagezentrumNewsContextSensor(_ContextBaseSensor):
             "active_event_count": data.active_event_count,
             "stale_event_count": data.stale_event_count,
             "context_recommended_defcon": data.recommended_defcon,
-            "affects_defcon": False,
+            "weak_signal_count": data.weak_signal_count,
+            "serious_signal_count": data.serious_signal_count,
+            "counted_signal_keys": [e.get("phenomenon_key") for e in data.counted_signals],
+            "excluded_signal_count": data.excluded_signal_count,
+            "affects_defcon": True,
             "active_events": data.active_events,
             "stale_events": data.stale_events,
             "recent_events": data.recent_events,
