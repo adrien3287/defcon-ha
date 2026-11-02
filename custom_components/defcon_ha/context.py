@@ -1,8 +1,8 @@
 """Event-driven contextual situation layer for DEFCON Home.
 
-The context engine is deliberately separate from the deterministic DEFCON engine.
-It stores AI-classified/news events, expires them by category, correlates repeated
-reports and exposes an indicative (non-authoritative) DEFCON recommendation.
+The context engine stores AI-classified/news events, expires them by category,
+deduplicates independent phenomena and calculates the same family DEFCON grid
+as the household coordinator.
 """
 
 from __future__ import annotations
@@ -19,6 +19,8 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
+
+from .signal_assessment import assess_context_signals
 
 from .const import (
     CONTEXT_ACTIVE_LIMIT,
@@ -56,6 +58,10 @@ class ContextSnapshot:
     active_event_count: int
     stale_event_count: int
     recommended_defcon: int
+    weak_signal_count: int
+    serious_signal_count: int
+    counted_signals: list[dict[str, Any]]
+    excluded_signal_count: int
     highest_importance: int
     highest_confidence: int
     top_event: dict[str, Any] | None
@@ -305,6 +311,9 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         event_key = explicit_key or _fallback_key(data)
 
         importance = _as_int(data.get("importance"), 0, 0, 3)
+        signal_class = _clean_text(data.get("signal_class"), max_len=32).lower()
+        if signal_class not in {"signal_faible", "signal_serieux", "contexte", "hors_calcul"}:
+            signal_class = "contexte"
         analysis_confidence = _as_int(
             data.get("analysis_confidence"), 75, 0, 100
         )
@@ -349,6 +358,9 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             "direct_relevance": direct_relevance,
             "protective_action": _as_bool(data.get("protective_action")),
             "importance": importance,
+            "signal_class": signal_class,
+            "signal_confirmed": _as_bool(data.get("signal_confirmed")),
+            "phenomenon_key": _slug(_clean_text(data.get("phenomenon_key"), max_len=128)) or event_key,
             "lifecycle": lifecycle,
             "source_name": source_name,
             "source_identity": source_identity,
@@ -648,39 +660,18 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
         else:
             status = "idle"
 
-        recommended_defcon = 5
-        if top_event is not None:
-            confidence = _as_int(
-                top_event.get("confidence_score"),
-                0,
-                0,
-                100,
-            )
-            corroboration = _as_int(
-                top_event.get("corroboration_count"),
-                1,
-                1,
-                20,
-            )
-            protective = _as_bool(
-                top_event.get("protective_action")
-            )
-            if highest_importance >= 3:
-                recommended_defcon = (
-                    3
-                    if protective
-                    or confidence >= 75
-                    or corroboration >= 2
-                    else 4
-                )
-            elif highest_importance == 2:
-                recommended_defcon = 4
+        assessment = assess_context_signals(active, now)
+        recommended_defcon = assessment.level
 
         return ContextSnapshot(
             status=status,
             active_event_count=len(active),
             stale_event_count=len(stale),
             recommended_defcon=recommended_defcon,
+            weak_signal_count=assessment.weak_count,
+            serious_signal_count=assessment.serious_count,
+            counted_signals=assessment.counted_signals,
+            excluded_signal_count=assessment.excluded_count,
             highest_importance=highest_importance,
             highest_confidence=highest_confidence,
             top_event=top_event,
