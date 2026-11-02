@@ -11,6 +11,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .context import ContextCoordinator
 from .coordinator import DefconCoordinator
+from .official_sources import OfficialSourcesCoordinator
 
 
 async def async_setup_entry(
@@ -20,6 +21,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator: DefconCoordinator = hass.data[DOMAIN][entry.entry_id]
     context: ContextCoordinator = hass.data[DOMAIN][f"{entry.entry_id}_context"]
+    official: OfficialSourcesCoordinator = hass.data[DOMAIN][f"{entry.entry_id}_official"]
     async_add_entities(
         [
             DefconLevelSensor(coordinator, entry),
@@ -31,6 +33,13 @@ async def async_setup_entry(
             ContextActiveEventsSensor(context, entry),
             ContextRecommendedDefconSensor(context, entry),
             LagezentrumNewsContextSensor(context, entry),
+            OfficialStatusSensor(official, entry, "gas"),
+            OfficialStatusSensor(official, entry, "water"),
+            OfficialStatusSensor(official, entry, "electricity"),
+            GasStorageSensor(official, entry),
+            FuelMedianSensor(official, entry, "diesel"),
+            FuelMedianSensor(official, entry, "e5"),
+            FuelMedianSensor(official, entry, "e10"),
         ]
     )
 
@@ -249,7 +258,7 @@ class ContextActiveEventsSensor(_ContextBaseSensor):
 
 
 class ContextRecommendedDefconSensor(_ContextBaseSensor):
-    """Indicative DEFCON recommendation from the context layer only."""
+    """Aggregated DEFCON from confirmed, independent RSS phenomena."""
 
     _attr_name = "Context recommended DEFCON"
     _attr_icon = "mdi:shield-search"
@@ -266,8 +275,12 @@ class ContextRecommendedDefconSensor(_ContextBaseSensor):
     def extra_state_attributes(self) -> dict:
         top = self.coordinator.data.top_event or {}
         return {
-            "advisory_only": True,
-            "affects_defcon": False,
+            "advisory_only": False,
+            "affects_defcon": True,
+            "weak_signal_count": self.coordinator.data.weak_signal_count,
+            "serious_signal_count": self.coordinator.data.serious_signal_count,
+            "counted_signal_keys": [e.get("phenomenon_key") for e in self.coordinator.data.counted_signals],
+            "excluded_signal_count": self.coordinator.data.excluded_signal_count,
             "top_event_key": top.get("event_key", ""),
             "top_event_title": top.get("title", ""),
             "highest_importance": self.coordinator.data.highest_importance,
@@ -329,10 +342,96 @@ class LagezentrumNewsContextSensor(_ContextBaseSensor):
             "active_event_count": data.active_event_count,
             "stale_event_count": data.stale_event_count,
             "context_recommended_defcon": data.recommended_defcon,
-            "affects_defcon": False,
+            "weak_signal_count": data.weak_signal_count,
+            "serious_signal_count": data.serious_signal_count,
+            "counted_signal_keys": [e.get("phenomenon_key") for e in data.counted_signals],
+            "excluded_signal_count": data.excluded_signal_count,
+            "affects_defcon": True,
             "active_events": data.active_events,
             "stale_events": data.stale_events,
             "recent_events": data.recent_events,
             "evaluated_at": data.evaluated_at.isoformat(),
         }
         return attrs
+
+class _OfficialBaseSensor(CoordinatorEntity[OfficialSourcesCoordinator], SensorEntity):
+    """Operator measurements and Tankerkoenig local medians."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: OfficialSourcesCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": "DEFCON Home",
+            "manufacturer": "DEFCON Home",
+            "model": "Lagezentrum — sources officielles et prix carburants",
+        }
+
+
+class OfficialStatusSensor(_OfficialBaseSensor):
+    """Source check state; unknown is deliberately visible."""
+
+    def __init__(self, coordinator: OfficialSourcesCoordinator, entry: ConfigEntry, key: str) -> None:
+        super().__init__(coordinator, entry)
+        self.key = key
+        self._attr_unique_id = f"{entry.entry_id}_{key}_official_status"
+        self._attr_name = {"gas": "Gas supply status", "water": "Hamburg Wasser status",
+                           "electricity": "Hamburger Energienetze status"}[key]
+        self._attr_icon = "mdi:alert-circle-outline"
+
+    @property
+    def native_value(self) -> str:
+        return str(self.coordinator.data.sources.get(self.key, {}).get("status", "unknown"))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return dict(self.coordinator.data.sources.get(self.key, {}))
+
+
+class GasStorageSensor(_OfficialBaseSensor):
+    _attr_name = "Germany gas storage"
+    _attr_native_unit_of_measurement = "%"
+    _attr_icon = "mdi:gas-cylinder"
+
+    def __init__(self, coordinator: OfficialSourcesCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_germany_gas_storage"
+
+    @property
+    def native_value(self) -> float | None:
+        source = self.coordinator.data.sources["gas"]
+        return source.get("storage_percent") if source.get("status") != "unknown" else None
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            **self.coordinator.data.sources["gas"],
+            "change_7d_percent": self.coordinator.data.fuel.get("gas_change_7d_percent"),
+        }
+
+
+class FuelMedianSensor(_OfficialBaseSensor):
+    _attr_native_unit_of_measurement = "€/L"
+    _attr_icon = "mdi:gas-station"
+
+    def __init__(self, coordinator: OfficialSourcesCoordinator, entry: ConfigEntry, fuel: str) -> None:
+        super().__init__(coordinator, entry)
+        self.fuel = fuel
+        self._attr_unique_id = f"{entry.entry_id}_fuel_median_{fuel}"
+        self._attr_name = f"Marmstorf fuel median {fuel.upper()}"
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.data.fuel["medians"].get(self.fuel)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        fuel = self.coordinator.data.fuel
+        return {
+            "status": fuel["status"],
+            "station_count": fuel["station_counts"].get(self.fuel, 0),
+            "change_7d_percent": fuel["change_7d_percent"].get(self.fuel),
+            "source_url": fuel["source_url"],
+            "checked_at": fuel["checked_at"],
+        }

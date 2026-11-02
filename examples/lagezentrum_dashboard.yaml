@@ -26,6 +26,25 @@ views:
           - entity: button.defcon_home_refresh
             name: Recalculer maintenant
 
+      - type: entities
+        title: Approvisionnement et infrastructures
+        state_color: true
+        entities:
+          - entity: sensor.defcon_home_germany_gas_storage
+            name: Stockage gaz Allemagne (%)
+          - entity: sensor.defcon_home_gas_supply_status
+            name: Sécurité approvisionnement gaz
+          - entity: sensor.defcon_home_marmstorf_fuel_median_diesel
+            name: Diesel médiane (€/L)
+          - entity: sensor.defcon_home_marmstorf_fuel_median_e5
+            name: Essence E5 médiane (€/L)
+          - entity: sensor.defcon_home_marmstorf_fuel_median_e10
+            name: Essence E10 médiane (€/L)
+          - entity: sensor.defcon_home_hamburg_wasser_status
+            name: Hamburg Wasser
+          - entity: sensor.defcon_home_hamburger_energienetze_status
+            name: Hamburger Energienetze
+
       - type: weather-forecast
         entity: weather.marmstorf
         name: Météo locale
