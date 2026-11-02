@@ -58,7 +58,7 @@ class DefconHaCard extends HTMLElement {
         external: "External",
         infrastructure: "Infrastructure",
         context: "Context",
-        advisory: "advisory",
+        advisory: "included",
         manual: "Manual override",
         reasons: "Active reasons",
         noReasons: "No active alert among configured sources",
@@ -72,7 +72,7 @@ class DefconHaCard extends HTMLElement {
         external: "Externe",
         infrastructure: "Infrastructure",
         context: "Contexte",
-        advisory: "indicatif",
+        advisory: "inclus",
         manual: "Override manuel",
         reasons: "Raisons actives",
         noReasons: "Aucune alerte active parmi les sources configurées",
@@ -86,7 +86,7 @@ class DefconHaCard extends HTMLElement {
         external: "Extern",
         infrastructure: "Infrastruktur",
         context: "Kontext",
-        advisory: "indikativ",
+        advisory: "einbezogen",
         manual: "Manueller Override",
         reasons: "Aktive Gründe",
         noReasons: "Keine aktive Warnung in den konfigurierten Quellen",
@@ -295,7 +295,7 @@ if (!window.customCards.some((card) => card.type === "defcon-ha-card")) {
   window.customCards.push({
     type: "defcon-ha-card",
     name: "DEFCON Home",
-    description: "Local deterministic household situation engine with advisory context.",
+    description: "Home Assistant household and corroborated official/RSS situation engine.",
     preview: true,
     getEntitySuggestion: (hass, entityId) => {
       const state = hass.states?.[entityId];
