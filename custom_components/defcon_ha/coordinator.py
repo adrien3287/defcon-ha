@@ -16,6 +16,8 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
+from .signal_assessment import assess_context_signals
+
 from .const import (
     CONF_BATTERY_SOC_ENTITIES,
     CONF_BFS_ASSESSMENT_ENTITIES,
@@ -145,6 +147,7 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         self._remove_listener = None
         self._last_level: int | None = None
         self.context_coordinator = None
+        self.official_coordinator = None
 
     @property
     def settings(self) -> dict[str, Any]:
@@ -342,35 +345,39 @@ class DefconCoordinator(DataUpdateCoordinator[DefconSnapshot]):
         # S/Y result is one additional independent decision path alongside NINA,
         # DWD and locally detected infrastructure failures.
         context = getattr(self.context_coordinator, "data", None)
-        context_level = context.recommended_defcon if context is not None else 5
-        context_weak = context.weak_signal_count if context is not None else 0
-        context_serious = context.serious_signal_count if context is not None else 0
-        if context is not None:
-            for event in context.counted_signals:
-                serious = event.get("signal_class") == "signal_serieux"
-                external.append(
-                    DefconReason(
-                        source="RSS / Gemini",
-                        category=str(event.get("category", "other")),
-                        entity_id="",
-                        title=str(event.get("title", "Phénomène signalé")),
-                        detail=str(event.get("summary_fr") or event.get("reason") or ""),
-                        level=3 if serious else 4,
-                        severity="serious_signal" if serious else "weak_signal",
-                    )
+        official = getattr(self.official_coordinator, "data", None)
+        candidates = list(context.active_events) if context is not None else []
+        if official is not None:
+            candidates.extend(official.signals)
+        assessed = assess_context_signals(candidates, dt_util.utcnow())
+        context_level = assessed.level
+        context_weak = assessed.weak_count
+        context_serious = assessed.serious_count
+        for event in assessed.counted_signals:
+            serious = event.get("signal_class") == "signal_serieux"
+            external.append(
+                DefconReason(
+                    source="Lagezentrum : flux RSS / opérateurs",
+                    category=str(event.get("category", "other")),
+                    entity_id="",
+                    title=str(event.get("title", "Phénomène signalé")),
+                    detail=str(event.get("summary_fr") or event.get("reason") or ""),
+                    level=3 if serious else 4,
+                    severity="serious_signal" if serious else "weak_signal",
                 )
-            if context_level < 5:
-                external.append(
-                    DefconReason(
-                        source="Lagezentrum RSS",
-                        category="situation_cumulative",
-                        entity_id="",
-                        title=f"Signaux indépendants : S={context_serious}, Y={context_weak}",
-                        detail="Agrégation des phénomènes corroborés, actifs et non dupliqués.",
-                        level=context_level,
-                        severity="cumulative",
-                    )
+            )
+        if context_level < 5:
+            external.append(
+                DefconReason(
+                    source="Lagezentrum : cumul",
+                    category="situation_cumulative",
+                    entity_id="",
+                    title=f"Signaux indépendants : S={context_serious}, Y={context_weak}",
+                    detail="Agrégation des sources RSS et des collecteurs officiels; déduplication des phénomènes.",
+                    level=context_level,
+                    severity="cumulative",
                 )
+            )
 
         external.sort(key=lambda r: (r.level, r.source, r.title))
         infrastructure.sort(key=lambda r: (r.level, r.source, r.title))
