@@ -360,6 +360,7 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             "importance": importance,
             "signal_class": signal_class,
             "signal_confirmed": _as_bool(data.get("signal_confirmed")),
+            "major_crisis": _as_bool(data.get("major_crisis")),
             "phenomenon_key": _slug(_clean_text(data.get("phenomenon_key"), max_len=128)) or event_key,
             "lifecycle": lifecycle,
             "source_name": source_name,
@@ -408,6 +409,15 @@ class ContextCoordinator(DataUpdateCoordinator[ContextSnapshot]):
             return True
 
         if not relevant or normalized["importance"] < 1:
+            # Do not keep counting a previously relevant phenomenon after an
+            # authoritative correction or explicit reclassification.
+            if index is not None:
+                item = self._events.pop(index)
+                item["status"] = "resolved"
+                item["resolved_at"] = now.isoformat()
+                item["resolution_reason"] = "reclassified_out"
+                self._append_history(item)
+                return True
             return False
 
         if index is None:
