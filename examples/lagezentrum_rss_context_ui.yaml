@@ -201,6 +201,22 @@ actions:
         couper la ventilation, éviter une zone, ne pas boire l'eau,
         évacuer ou se mettre à l'abri impose importance=3.
 
+        CLASSE DE SIGNAL POUR LE CALCUL DEFCON
+        - signal_faible : phénomène confirmé ou corroboré, actif et
+          indépendant, plausible pour la résilience de Hambourg.
+        - signal_serieux : danger ou défaillance majeure actuelle confirmée.
+        - contexte : suivi utile sans conditions suffisantes pour compter.
+        - hors_calcul : absence d'effet pertinent.
+        signal_confirmed vaut true seulement si vérifié ou corroboré
+        par une source fiable; aucune spéculation ne suffit.
+        phenomenon_key identifie le PHÉNOMÈNE et non l'article.
+        Clés communes lorsqu'elles conviennent exactement :
+        germany-gas-storage, hamburg-water-local,
+        hamburg-electricity-local, hamburg-fuel-price-spike.
+        Même phénomène = un signal, même avec plusieurs articles.
+        major_crisis = true uniquement si crise majeure officiellement confirmée.
+        Ne pas confondre hausse de prix et rupture d'approvisionnement.
+
         CATÉGORIES AUTORISÉES
         security, fire, infrastructure, electricity, water, telecom,
         transport, weather, pollution, energy, cyber, sabotage,
@@ -316,6 +332,50 @@ actions:
               min: 0
               max: 3
 
+        signal_class:
+
+          description: "signal_faible, signal_serieux, contexte ou hors_calcul"
+
+          required: true
+
+          selector:
+
+            text:
+
+
+        signal_confirmed:
+
+          description: "Fait vérifié et actif"
+
+          required: true
+
+          selector:
+
+            boolean:
+
+
+        phenomenon_key:
+
+          description: "Clé stable du phénomène"
+
+          required: true
+
+          selector:
+
+            text:
+
+
+        major_crisis:
+
+          description: "Crise majeure officiellement confirmée"
+
+          required: true
+
+          selector:
+
+            boolean:
+
+
         category:
           description: "Catégorie opérationnelle"
           required: true
@@ -416,6 +476,10 @@ actions:
       source_class: "{{ source_class | trim }}"
       relevant: "{{ rss_result.data.relevant | default(false) }}"
       importance: "{{ rss_result.data.importance | default(0) }}"
+      signal_class: "{{ rss_result.data.signal_class | default('contexte') }}"
+      signal_confirmed: "{{ rss_result.data.signal_confirmed | default(false) }}"
+      phenomenon_key: "{{ rss_result.data.phenomenon_key | default(rss_result.data.event_key | default('')) }}"
+      major_crisis: "{{ rss_result.data.major_crisis | default(false) }}"
       category: "{{ rss_result.data.category | default('other') }}"
       scope: "{{ rss_result.data.scope | default('') }}"
       direct_relevance: "{{ rss_result.data.direct_relevance | default('potential') }}"
