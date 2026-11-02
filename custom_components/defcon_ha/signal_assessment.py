@@ -47,12 +47,34 @@ def _is_started(value: Any, now: datetime | None) -> bool:
         return False
 
 
+def _canonical_key(event: dict[str, Any]) -> str:
+    """Normalize explicitly familiar phenomena to avoid double-counting RSS and operators."""
+    category = str(event.get("category", "")).lower()
+    description = " ".join(
+        str(event.get(key) or "") for key in ("title", "summary_fr", "reason", "event_key")
+    ).lower()
+    if category in {"energy", "gas"} and any(
+        phrase in description for phrase in
+        ("gasspeicher", "stockage gaz", "réserves de gaz", "gas storage", "gas-storage")
+    ):
+        return "germany-gas-storage"
+    if category in {"water", "infrastructure"} and any(
+        phrase in description for phrase in ("marmstorf", "westerheide", "handweg")
+    ):
+        return "hamburg-water-local"
+    if category in {"electricity", "infrastructure"} and any(
+        phrase in description for phrase in ("hamburger energienetze", "marmstorf strom")
+    ):
+        return "hamburg-electricity-local"
+    return str(event.get("phenomenon_key") or event.get("event_key") or "").strip().lower()
+
+
 def assess_context_signals(
     events: Iterable[dict[str, Any]], now: datetime | None = None
 ) -> SignalAssessment:
     """Compute DEFCON 1–5 using S serious and Y independent weak signals.
 
-    S>=2 or S>=1 and Y>=2 -> 2; S>=1 or Y>=3 -> 3;
+    Major crisis, S>=2 or S>=1 and Y>=2 -> 2; S>=1 or Y>=3 -> 3;
     Y>=1 -> 4; otherwise 5. Confirmed urgent local protection -> 1.
     """
     groups: dict[str, dict[str, Any]] = {}
@@ -76,7 +98,7 @@ def assess_context_signals(
             excluded += 1
             continue
 
-        key = str(event.get("phenomenon_key") or event.get("event_key") or "").strip().lower()
+        key = _canonical_key(event)
         if not key:
             excluded += 1
             continue
@@ -101,9 +123,11 @@ def assess_context_signals(
         for x in counted
     )
 
+    major_crisis = any(_true(x.get("major_crisis")) for x in counted)
+
     if direct_danger:
         level = 1
-    elif serious >= 2 or (serious >= 1 and weak >= 2):
+    elif major_crisis or serious >= 2 or (serious >= 1 and weak >= 2):
         level = 2
     elif serious >= 1 or weak >= 3:
         level = 3
