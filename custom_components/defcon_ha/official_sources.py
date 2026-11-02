@@ -6,6 +6,7 @@ Tankerkoenig itself must be configured separately in Home Assistant.
 """
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import logging
@@ -46,13 +47,14 @@ class OfficialSnapshot:
 
 def _official_signal(key: str, category: str, title: str, detail: str, *,
                      severity: str = "signal_faible", relevance: str = "potential",
-                     source: str = "official", url: str = "") -> dict[str, Any]:
+                     source: str = "official", url: str = "", major_crisis: bool = False) -> dict[str, Any]:
     return {
         "status": "active",
         "event_key": key,
         "phenomenon_key": key,
         "signal_class": severity,
         "signal_confirmed": True,
+        "major_crisis": major_crisis,
         "importance": 3 if severity == "signal_serieux" else 2,
         "analysis_confidence": 95,
         "confidence_score": 95 if source == "official" else 80,
@@ -144,12 +146,17 @@ class OfficialSourcesCoordinator(DataUpdateCoordinator[OfficialSnapshot]):
         now = dt_util.utcnow()
         gas_due = self._gas_last_fetch is None or now - self._gas_last_fetch >= GAS_INTERVAL
         if gas_due:
-            # Do not retain an expired, previously good result after a failed fetch.
-            gas = await self._fetch("gas")
+            # Load all three independent operator sources concurrently.
+            gas, water, electricity = await asyncio.gather(
+                self._fetch("gas"), self._fetch("water"), self._fetch("electricity")
+            )
             self._gas_last_fetch = now
             self._gas_result = gas
         else:
             gas = dict(self._gas_result or {"status": "unknown"})
+            water, electricity = await asyncio.gather(
+                self._fetch("water"), self._fetch("electricity")
+            )
         # Never treat a stale cached page as current.
         for key, source in (("gas", gas),):
             seen = source.get("checked_at")
@@ -160,9 +167,6 @@ class OfficialSourcesCoordinator(DataUpdateCoordinator[OfficialSnapshot]):
             if then is None or then.tzinfo is None or now - then > SOURCE_MAX_AGE[key]:
                 gas = {**gas, "status": "unknown", "detail": "Source outdated"}
 
-        # Independent fetching allows one service failure without suppressing the others.
-        import asyncio
-        water, electricity = await asyncio.gather(self._fetch("water"), self._fetch("electricity"))
         sources = {"gas": gas, "water": water, "electricity": electricity}
 
         medians, counts = self._fuel_readings()
@@ -205,7 +209,7 @@ class OfficialSourcesCoordinator(DataUpdateCoordinator[OfficialSnapshot]):
         if gas.get("status") == "crisis":
             signals.append(_official_signal(
                 "germany-gas-supply", "energy", "Crise de l'approvisionnement gazier allemand",
-                gas.get("detail", ""), severity="signal_serieux", url=OFFICIAL_URLS["gas"],
+                gas.get("detail", ""), severity="signal_serieux", url=OFFICIAL_URLS["gas"], major_crisis=True,
             ))
         elif gas.get("status") == "stable" and gas.get("lower_than_previous_years") and gas.get("storage_percent", 100) < 65:
             signals.append(_official_signal(
@@ -221,7 +225,7 @@ class OfficialSourcesCoordinator(DataUpdateCoordinator[OfficialSnapshot]):
             source = sources[key]
             if source.get("status") == "active" and source.get("local"):
                 signals.append(_official_signal(
-                    f"hamburg-{key}-local", category, label, source.get("detail", ""),
+                    f"hamburg-{key if key == 'water' else 'electricity'}-local", category, label, source.get("detail", ""),
                     relevance="direct" if "Koboldweg" in source.get("area", "") else "potential",
                     url=OFFICIAL_URLS[key],
                 ))
@@ -236,7 +240,7 @@ class OfficialSourcesCoordinator(DataUpdateCoordinator[OfficialSnapshot]):
                 "hamburg-fuel-price-spike", "supply", "Hausse anormale du prix des carburants",
                 f"Médianes locales sur 7 jours : {fuel_data['change_7d_percent']}. "
                 "Hausse de prix seulement, aucune pénurie prouvée.",
-                source="public_media", url="https://www.home-assistant.io/integrations/tankerkoenig",
+                source="official", url="https://www.home-assistant.io/integrations/tankerkoenig",
             ))
 
         return OfficialSnapshot(sources, fuel_data, signals, now)
